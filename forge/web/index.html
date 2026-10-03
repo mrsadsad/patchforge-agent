@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#222420">
+  <title>PatchForge · Coding Agent 工作台</title>
+  <style>
+    :root { --paper:#f3f1eb; --white:#fffefa; --ink:#272923; --muted:#777a6f; --line:#dedfd5; --orange:#d65c32; --orange-light:#fae8de; --green:#3c7859; --dark:#222420; --dark-line:#3a3c36; --mono:Consolas,"SFMono-Regular",Menlo,monospace; --sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; }
+    body { background:var(--paper); color:var(--ink); font:14px/1.6 var(--sans); -webkit-font-smoothing:antialiased; }
+    button,select,input { font:inherit; }
+    button,select { cursor:pointer; }
+    button { color:inherit; }
+    button:disabled { cursor:not-allowed; opacity:.42; }
+    button,a,select,summary { -webkit-tap-highlight-color:transparent; }
+    button:focus-visible,a:focus-visible,select:focus-visible,summary:focus-visible { outline:3px solid #e49a65; outline-offset:3px; }
+    button { -webkit-appearance:none; appearance:none; }
+    button svg { flex-shrink:0; }
+    a { color:inherit; }
+    [hidden] { display:none!important; }
+    .shell { min-height:100vh; display:grid; grid-template-columns:242px minmax(0,1fr); }
+    .sidebar { background:var(--dark); color:#c5c8bb; padding:28px 18px 20px; display:flex; flex-direction:column; min-height:100vh; }
+    .brand { display:flex; align-items:center; gap:11px; padding:0 10px; text-decoration:none; }
+    .brand-mark { width:34px; height:34px; display:grid; place-items:center; color:#e47a4b; }
+    .brand-name { color:#f4f3e9; font-weight:650; font-size:22px; letter-spacing:-.8px; }
+    .brand-sub { color:#858c79; padding:2px 10px 27px 55px; font-family:var(--mono); font-size:10px; letter-spacing:1.5px; }
+    .workspace-link { padding:11px 13px; background:#33372e; border:1px solid #464b3d; border-radius:6px; display:flex; gap:10px; align-items:center; color:#f0f0e7; margin-bottom:28px; }
+    .workspace-link svg { color:#b7c0a5; }
+    .workspace-link span { flex:1; font-size:13px; font-weight:600; }
+    .small-key { font:10px var(--mono); padding:3px 5px; border:1px solid #58604c; border-radius:3px; color:#b5bea7; }
+    .sidebar-heading { display:flex; justify-content:space-between; align-items:center; margin:0 11px 10px; color:#8e9484; font-size:10px; font-weight:600; letter-spacing:1.7px; text-transform:uppercase; }
+    .sidebar-heading .count { font:10px var(--mono); color:#a0a591; letter-spacing:0; }
+    .task-list { display:flex; flex-direction:column; gap:5px; margin-bottom:30px; }
+    .task-button { display:grid; grid-template-columns:22px minmax(0,1fr); gap:7px; background:transparent; border:1px solid transparent; border-radius:5px; width:100%; padding:11px 10px; text-align:left; color:#aeb3a3; }
+    .task-button:hover { color:#f0f1e7; background:#2a2e26; }
+    .task-button.active { border-color:#4b5141; background:#33382e; color:#f7f7ed; }
+    .task-button.active .task-number { color:#e89364; }
+    .task-number { font:11px/23px var(--mono); color:#7b856e; }
+    .task-name { font-size:12px; line-height:1.7; display:block; }
+    .task-meta { display:block; font:9px/1.5 var(--mono); color:#818d74; margin-top:5px; letter-spacing:.2px; }
+    .sidebar-empty { padding:8px 11px; color:#818876; font-size:12px; }
+    .run-list { display:flex; flex-direction:column; gap:4px; }
+    .run-button { display:flex; gap:9px; align-items:flex-start; background:transparent; border:0; text-align:left; width:100%; padding:9px 11px; border-radius:4px; color:#969f89; }
+    .run-button:hover,.run-button.active { background:#2e332a; color:#dce1d3; }
+    .run-button .status-dot { margin-top:6px; }
+    .run-text { min-width:0; flex:1; }
+    .run-name { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:11px; }
+    .run-meta { display:block; margin-top:2px; font:9px var(--mono); color:#75826b; }
+    .sidebar-footer { margin-top:auto; padding:34px 10px 0; }
+    .local-label { display:flex; align-items:center; gap:8px; border-top:1px solid #3a4032; padding-top:18px; font:10px var(--mono); color:#a4af95; }
+    .footer-caption { color:#738068; font-size:10px; margin:7px 0 0 13px; }
+    .main { min-width:0; }
+    .topbar { height:69px; border-bottom:1px solid var(--line); padding:0 36px; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .breadcrumb { display:flex; align-items:center; gap:12px; font-size:12px; color:#838679; }
+    .breadcrumb .slash { color:#bcc0b2; }
+    .breadcrumb strong { font-weight:550; color:#474d3e; }
+    .topbar-right { display:flex; align-items:center; gap:18px; }
+    .version { font:10px var(--mono); color:#8d9281; }
+    .connection { display:flex; gap:7px; align-items:center; font-size:10px; color:#6b795e; }
+    .status-dot { width:6px; height:6px; border-radius:50%; background:#a3aa98; flex-shrink:0; display:inline-block; }
+    .status-dot.running,.status-dot.queued { background:#d8864a; box-shadow:0 0 0 3px #d8864a17; }
+    .status-dot.completed,.status-dot.ok { background:#769067; }
+    .status-dot.failed,.status-dot.error,.status-dot.budget_exhausted,.status-dot.interrupted { background:#c5705d; }
+    .page { padding:32px 36px 24px; max-width:1920px; margin:auto; }
+    .page-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:25px; margin-bottom:28px; }
+    .eyebrow { margin:0 0 8px; font:10px var(--mono); letter-spacing:2.5px; color:#8a8e7d; text-transform:uppercase; }
+    .eyebrow .accent { color:var(--orange); }
+    h1 { font-size:27px; font-weight:600; line-height:1.5; letter-spacing:-.7px; margin:0; }
+    .page-description { color:#848777; font-size:11px; margin:7px 0 0; }
+    .heading-note { color:#7e8570; font:10px/1.9 var(--mono); text-align:right; flex-shrink:0; padding-bottom:2px; }
+    .control-bar { display:flex; justify-content:space-between; gap:18px; align-items:center; padding:16px 19px; border:1px solid var(--line); background:#eceee4; border-radius:7px 7px 0 0; }
+    .settings { display:flex; align-items:center; gap:24px; }
+    .setting { display:flex; gap:9px; align-items:center; }
+    .setting label { font-size:11px; color:#818875; white-space:nowrap; }
+    .setting select { border:0; background:transparent; color:#424b35; font-size:12px; padding:5px 20px 5px 0; max-width:210px; }
+    .control-actions { display:flex; gap:8px; }
+    .primary-button { border:1px solid #bd512c; background:var(--orange); color:white; padding:9px 17px; border-radius:4px; font-size:12px; font-weight:550; display:flex; gap:9px; align-items:center; justify-content:center; box-shadow:0 2px 2px #8940230b; white-space:nowrap; }
+    .primary-button:hover:not(:disabled) { background:#be4e28; }
+    .secondary-button { background:#fffefa; border:1px solid #d4d9cb; border-radius:4px; padding:8px 12px; font-size:11px; display:flex; gap:7px; align-items:center; justify-content:center; }
+    .secondary-button:hover:not(:disabled) { background:#eaece1; }
+    .danger-button { color:#a55842; border-color:#dbc3b8; }
+    .mode-note { display:flex; align-items:flex-start; gap:7px; padding:10px 19px; background:#faf8f0; color:#94917e; border:1px solid var(--line); border-top:0; font-size:10px; }
+    .mode-note svg { margin-top:1px; flex-shrink:0; color:#a19770; }
+    .mode-note strong { color:#79745e; font-weight:550; }
+    .workbench { display:grid; grid-template-columns:minmax(0,1fr) 290px; border:1px solid var(--line); border-top:0; border-radius:0 0 7px 7px; overflow:hidden; background:var(--white); }
+    .editor-column { min-width:0; border-right:1px solid var(--line); }
+    .issue-panel { padding:25px 25px 21px; min-height:192px; }
+    .issue-header { display:flex; gap:10px; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .issue-label { color:#858c77; font:10px var(--mono); letter-spacing:1px; display:flex; align-items:center; gap:7px; }
+    .issue-label svg { color:#cc6843; }
+    .tags { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
+    .tag { font:9px/1.6 var(--mono); color:#7c866d; background:#f2f3e9; padding:2px 6px; border:1px solid #e6e9dd; border-radius:3px; }
+    h2 { font-size:19px; line-height:1.65; margin:0; font-weight:600; letter-spacing:-.35px; }
+    .issue-body { color:#7a816e; font-size:12px; line-height:1.9; margin:9px 0 0; white-space:pre-wrap; overflow-wrap:anywhere; max-height:158px; overflow:auto; }
+    .source-note { color:#909b81; font-size:10px; margin:11px 0 0; line-height:1.8; }
+    .provenance { margin-top:10px; color:#80936c; font-size:10px; }
+    .provenance summary { cursor:pointer; }
+    .provenance-content { display:flex; flex-wrap:wrap; gap:7px 14px; padding-top:9px; overflow-wrap:anywhere; }
+    .provenance-content p { flex-basis:100%; margin:0; }
+    .provenance-content a { color:#a2764e; text-decoration:underline; text-underline-offset:3px; }
+    .tag.source { color:#a17855; background:#faf0e6; border-color:#ecdfd0; }
+    .code-browser { display:grid; grid-template-columns:170px minmax(0,1fr); min-height:381px; background:#282c25; }
+    .file-explorer { min-width:0; border-right:1px solid #434b39; background:#2d3228; }
+    .file-explorer-header { padding:13px 13px 11px; color:#94a580; font:9px var(--mono); border-bottom:1px solid #3c4534; display:flex; justify-content:space-between; gap:7px; }
+    .file-list { padding:7px 0 15px; max-height:540px; overflow:auto; }
+    .file-button { display:block; width:100%; padding:9px 10px; text-align:left; color:#a6b597; border:0; border-left:2px solid transparent; background:transparent; }
+    .file-button:hover { background:#363f2d; }
+    .file-button.active { background:#394430; border-left-color:#d7824c; color:#dbe5cd; }
+    .file-folder { display:block; font:8px/1.6 var(--mono); color:#859975; overflow-wrap:anywhere; }
+    .file-name { font:10px/1.8 var(--mono); overflow-wrap:anywhere; }
+    .file-flags { display:flex; gap:5px; margin-top:3px; color:#899c77; font-size:8px; }
+    .file-flags .changed { color:#d29862; }
+    .code-reader { min-width:0; }
+    .code-reader-toolbar { padding:10px 13px; border-bottom:1px solid #3c4534; display:flex; gap:8px; align-items:center; justify-content:space-between; min-height:41px; }
+    .code-file-path { font:9px var(--mono); color:#9bad88; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .source-switch { display:flex; gap:1px; background:#22291d; border:1px solid #46563a; padding:2px; border-radius:3px; flex-shrink:0; }
+    .source-switch button { border:0; background:transparent; color:#8b9f75; border-radius:2px; font-size:9px; padding:3px 6px; }
+    .source-switch button[aria-pressed="true"] { color:#e1e9d5; background:#475b37; }
+    .code-lines { font:11px/1.85 var(--mono); color:#c1cdb2; overflow:auto; max-height:510px; padding:12px 0 20px; tab-size:4; }
+    .code-lines .diff-line { min-width:max-content; }
+    .code-empty { padding:38px 23px; color:#98aa83; font-size:11px; line-height:1.9; }
+    .code-empty button { margin-top:13px; }
+    .code-file-info { padding:8px 13px; border-top:1px solid #3c4534; font:8px/1.8 var(--mono); color:#869c73; overflow-wrap:anywhere; }
+    .run-evidence { margin:0 20px 16px; padding:12px 0; border-bottom:1px solid #e1e9d6; color:#8b9b7d; font-size:9px; line-height:1.9; }
+    .evidence-row { margin-bottom:8px; }
+    .evidence-row:last-child { margin-bottom:0; }
+    .evidence-row strong { display:block; font-size:9px; color:#71875e; font-weight:500; }
+    .evidence-code { font:8px/1.8 var(--mono); color:#93a480; overflow-wrap:anywhere; }
+    .evidence-match { color:#5f824b; }
+    .evidence-pending { color:#ab8558; }
+    .phase-bar { display:flex; align-items:center; padding:13px 25px; background:#f9f9f3; border-top:1px solid #edf0e4; border-bottom:1px solid var(--line); gap:10px; }
+    .phase { display:flex; gap:6px; align-items:center; white-space:nowrap; font-size:10px; color:#9da38f; }
+    .phase-index { font:9px var(--mono); border:1px solid #dde2d1; border-radius:50%; width:16px; height:16px; display:grid; place-items:center; }
+    .phase.active { color:var(--orange); }
+    .phase.active .phase-index { border-color:#e4b49a; background:#faeee4; }
+    .phase.done { color:#668752; }
+    .phase.done .phase-index { border-color:#c4d0b7; background:#eff3e6; }
+    .phase-line { height:1px; background:#e0e5d6; min-width:8px; flex:1; max-width:70px; }
+    .editor-tabs { height:51px; display:flex; gap:19px; align-items:stretch; justify-content:space-between; padding:0 22px; border-bottom:1px solid var(--line); }
+    .tabs { display:flex; gap:18px; min-width:0; overflow:auto; }
+    .tab { position:relative; border:0; background:transparent; color:#909880; padding:0 0; font-size:11px; white-space:nowrap; }
+    .tab[aria-selected="true"] { color:#485b39; font-weight:600; }
+    .tab[aria-selected="true"]:after { content:""; position:absolute; height:2px; left:0; right:0; bottom:-1px; background:var(--orange); }
+    .editor-actions { display:flex; gap:13px; align-items:center; }
+    .icon-button { padding:6px; margin:-6px; border:0; background:transparent; color:#939a84; display:grid; place-items:center; text-decoration:none; }
+    .icon-button:hover:not(:disabled) { color:#4c6039; }
+    .editor-area { min-height:381px; }
+    .empty-state { min-height:381px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:35px; background:radial-gradient(ellipse at center,#fbfbf5 0,#fffefa 74%); }
+    .empty-symbol { color:#97a28a; width:57px; height:64px; margin:0 0 19px; }
+    .empty-state h3 { font-size:14px; color:#647155; font-weight:550; margin:0 0 6px; }
+    .empty-state p { font-size:11px; line-height:1.9; color:#a0a58f; margin:0; max-width:310px; }
+    .empty-shortcut { display:flex; gap:6px; color:#9da18f; align-items:center; font:9px var(--mono); margin-top:20px; }
+    .empty-shortcut kbd { border:1px solid #e0e4d6; background:#f9faf2; border-radius:3px; padding:2px 5px; }
+    .diff-container { background:#282c25; min-height:381px; color:#bfc8b2; overflow:auto; max-height:560px; font:11px/1.85 var(--mono); tab-size:4; }
+    .diff-info { display:flex; justify-content:space-between; gap:12px; padding:13px 19px; background:#2f342a; color:#9eab8d; border-bottom:1px solid #3c4534; font:10px var(--mono); position:sticky; top:0; z-index:1; }
+    .diff-lines { padding:10px 0 20px; min-width:max-content; }
+    .diff-line { display:flex; min-height:20px; padding-right:20px; white-space:pre; }
+    .line-number { text-align:right; user-select:none; color:#637358; flex:0 0 47px; width:47px; padding-right:16px; }
+    .line-text { padding-right:10px; }
+    .diff-line.add { background:#3e59342b; color:#abc790; }
+    .diff-line.remove { background:#8646312e; color:#d9977f; }
+    .diff-line.hunk { background:#4c544829; color:#899e80; margin:5px 0; }
+    .diff-line.file { color:#d6ddcd; padding-top:10px; padding-bottom:4px; }
+    .test-view { padding:21px 23px; }
+    .test-intro { font-size:11px; color:#919984; margin:0 0 17px; }
+    .test-suite { border:1px solid #e3e7d9; border-radius:4px; margin-bottom:12px; overflow:hidden; }
+    .test-suite header { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; background:#f7f9f0; }
+    .test-suite h3 { font-size:11px; margin:0; font-weight:550; color:#667454; }
+    .test-result { display:flex; gap:6px; align-items:center; font:10px var(--mono); color:#8a947d; }
+    .test-result.pass { color:#5e8050; }
+    .test-result.fail { color:#ae6950; }
+    .test-suite pre { margin:0; padding:13px 14px; color:#78856a; font:10px/1.75 var(--mono); white-space:pre-wrap; overflow-wrap:anywhere; max-height:250px; overflow:auto; }
+    .test-suite .test-caption { padding:9px 14px; color:#8b957e; font-size:10px; border-top:1px solid #e8ecdf; }
+    .events-view { padding:18px 24px; }
+    .event-detail { border-bottom:1px solid #e9ecdf; padding:12px 0; }
+    .event-detail summary { cursor:pointer; list-style:none; display:flex; gap:10px; align-items:center; font-size:11px; color:#667555; }
+    .event-detail summary:before { content:"+"; color:#a3ac94; font:13px var(--mono); }
+    .event-detail[open] summary:before { content:"−"; }
+    .event-kind { font:9px var(--mono); color:#9ca58e; }
+    .event-detail time { font:9px var(--mono); color:#a2aa95; margin-left:auto; }
+    .event-detail pre { background:#f3f6ea; margin:10px 0 0; padding:12px; color:#7c8a6d; font:10px/1.75 var(--mono); white-space:pre-wrap; overflow-wrap:anywhere; max-height:350px; overflow:auto; }
+    .evaluation-view { padding:21px 24px; }
+    .evaluation-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:13px; }
+    .evaluation-heading h3 { font-size:12px; margin:0; color:#637651; }
+    .evaluation-view p { color:#8b987e; font-size:11px; }
+    .evaluation-json { padding:17px; background:#f3f6e9; font:10px/1.8 var(--mono); color:#728263; white-space:pre-wrap; overflow-wrap:anywhere; max-height:430px; overflow:auto; }
+    .evaluation-table { border-collapse:collapse; width:100%; font-size:10px; }
+    .evaluation-table th,.evaluation-table td { padding:9px 8px; border-bottom:1px solid #e3e9d8; text-align:left; color:#7d8c6b; }
+    .evaluation-table th { color:#5e7350; font-weight:500; }
+    .evaluation-split { padding-top:18px; margin-top:18px; border-top:1px solid #e1e8d5; }
+    .evaluation-split h4 { margin:0 0 7px; color:#657d51; font-size:12px; font-weight:550; }
+    .evaluation-split .split-caption { margin:0 0 10px; color:#95a384; font-size:10px; }
+    .run-rail { background:#fafbf5; min-width:0; display:flex; flex-direction:column; }
+    .rail-header { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:21px 20px 18px; }
+    .rail-title { margin:0; color:#657453; font-size:11px; font-weight:550; display:flex; gap:8px; align-items:center; }
+    .rail-title svg { color:#869a73; }
+    .state-pill { display:flex; align-items:center; gap:5px; padding:3px 7px; border:1px solid #e0e5d5; background:#f0f4e7; border-radius:3px; font-size:9px; color:#869773; white-space:nowrap; }
+    .state-pill.running,.state-pill.queued { color:#b47b4c; border-color:#ecdbc4; background:#fcf5e8; }
+    .state-pill.completed { color:#63824e; border-color:#cedcbf; background:#f0f6e7; }
+    .state-pill.failed,.state-pill.budget_exhausted,.state-pill.interrupted { color:#b66f52; border-color:#ecd2c2; background:#fbf0e7; }
+    .metrics { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #e7eddd; border-bottom:1px solid #e7eddd; margin:0 20px; padding:17px 0; gap:15px 22px; }
+    .metric label { font-size:9px; color:#a1aa91; display:block; margin-bottom:3px; }
+    .metric-value { font:19px/1.5 var(--mono); color:#596e47; letter-spacing:-.8px; }
+    .metric-value span { font-size:10px; color:#a4b092; letter-spacing:0; }
+    .trace-heading { display:flex; justify-content:space-between; align-items:center; color:#9aa68a; padding:21px 20px 14px; font:9px var(--mono); letter-spacing:1px; }
+    .trace-heading span:last-child { letter-spacing:0; color:#a9b19c; }
+    .trace-list { padding:0 20px 20px; max-height:337px; overflow:auto; flex:1; min-height:155px; }
+    .trace-item { padding-left:19px; position:relative; margin-left:4px; border-left:1px solid #e0e6d5; padding-bottom:19px; }
+    .trace-item:last-child { border-left-color:transparent; padding-bottom:0; }
+    .trace-item:before { content:""; position:absolute; left:-4px; top:6px; width:7px; height:7px; border:1px solid #cad4bb; border-radius:50%; background:#f8faf1; }
+    .trace-item:last-child:before { background:#a5b38f; border-color:#a5b38f; }
+    .trace-item.error:before { background:#cb9671; border-color:#cb9671; }
+    .trace-item-title { font-size:10px; color:#7d8e6a; line-height:1.8; margin:0; overflow-wrap:anywhere; }
+    .trace-item time { color:#abb79a; font:9px/1.8 var(--mono); }
+    .trace-kind { font:8px var(--mono); color:#a1ae90; margin-top:4px; }
+    .trace-empty { margin:7px 0 0 4px; padding:0 0 0 18px; border-left:1px dashed #d8e0ca; color:#acb69b; font-size:10px; line-height:1.9; }
+    .trace-empty strong { font-size:11px; color:#8d9e79; font-weight:500; display:block; margin-bottom:4px; }
+    .run-summary { border-top:1px solid #e1e9d6; padding:15px 20px; background:#f3f7eb; color:#839672; font-size:10px; line-height:1.9; overflow-wrap:anywhere; }
+    .run-error { color:#b47355; background:#faf1e5; }
+    .rail-foot { padding:14px 20px; border-top:1px solid #e7eddd; font:9px/1.8 var(--mono); color:#a7b598; margin-top:auto; overflow-wrap:anywhere; }
+    .bottom-note { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin:14px 0 0; color:#989f8b; font-size:9px; line-height:1.8; }
+    .bottom-note span:last-child { white-space:nowrap; font-family:var(--mono); color:#a2ac94; }
+    .notice { position:fixed; z-index:30; right:30px; bottom:25px; padding:12px 17px; max-width:min(450px,calc(100vw - 36px)); background:#303c28; color:#edf2e5; border:1px solid #536844; border-radius:6px; box-shadow:0 10px 35px #1421091f; font-size:12px; }
+    .notice.error { background:#6a3e2a; border-color:#966144; }
+    .connection-error { border:1px solid #e2cbb7; color:#9b704e; background:#fcf3e5; padding:12px 15px; margin-bottom:18px; display:flex; gap:14px; align-items:center; justify-content:space-between; font-size:11px; }
+    .spinner { width:12px; height:12px; border:1.5px solid #ffffff66; border-top-color:white; border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @media (min-width:1500px) { .shell { grid-template-columns:260px minmax(0,1fr); } .sidebar { padding-left:24px; padding-right:24px; } .page { padding:39px 46px 30px; } .topbar { padding:0 46px; } .workbench { grid-template-columns:minmax(0,1fr) 320px; } .editor-area,.empty-state,.diff-container { min-height:440px; } .issue-panel { min-height:205px; } }
+    @media (max-width:1180px) { .shell { grid-template-columns:212px minmax(0,1fr); } .sidebar { padding-left:12px; padding-right:12px; } .topbar { padding:0 24px; } .page { padding:27px 24px 22px; } .workbench { grid-template-columns:minmax(0,1fr) 248px; } .settings { gap:15px; } .setting { display:block; } .setting label { display:block; font-size:9px; } .setting select { padding:2px 10px 2px 0; font-size:11px; } .heading-note { display:none; } .editor-tabs { padding:0 18px; gap:10px; } .tabs { gap:14px; } .tab { font-size:10px; } .issue-panel { padding:22px 20px 19px; } .phase-bar { padding:12px 20px; gap:6px; } .phase { gap:4px; font-size:9px; } }
+    @media (max-width:990px) { .shell { grid-template-columns:185px minmax(0,1fr); } .brand-name { font-size:19px; } .brand-sub { padding-left:51px; font-size:9px; letter-spacing:.6px; } .brand { padding-left:6px; gap:6px; } .sidebar { padding-left:10px; padding-right:10px; } .task-button { padding:9px 6px; grid-template-columns:18px minmax(0,1fr); gap:5px; } .task-name { font-size:11px; } .workbench { grid-template-columns:minmax(0,1fr); } .editor-column { border-right:0; } .run-rail { border-top:1px solid var(--line); display:grid; grid-template-columns:230px minmax(0,1fr); } .rail-header { grid-column:1; padding-bottom:10px; } .metrics { grid-column:1; grid-row:2/5; border-bottom:0; align-content:start; margin-bottom:17px; } .trace-heading { grid-column:2; grid-row:1; padding-bottom:10px; } .trace-list { grid-column:2; grid-row:2/5; max-height:210px; min-height:150px; padding-bottom:17px; } .run-summary,.rail-foot { grid-column:1/-1; } .editor-area,.empty-state,.diff-container { min-height:340px; } h1 { font-size:25px; } .page-description { font-size:10px; } }
+    @media (max-width:700px) { .shell { display:block; } .sidebar { min-height:0; padding:17px 16px 12px; } .brand { padding:0; } .brand-mark { width:26px; height:26px; } .brand-name { font-size:21px; } .brand-sub,.workspace-link,.sidebar-footer,.history-section,.sidebar-heading { display:none; } .task-list { margin:16px 0 0; display:flex; flex-direction:row; overflow:auto; gap:8px; padding-bottom:4px; } .task-button { flex:0 0 175px; padding:9px 10px; } .task-meta { margin-top:3px; } .topbar { height:47px; padding:0 18px; } .breadcrumb { font-size:10px; gap:8px; } .topbar-right { gap:10px; } .version { display:none; } .page { padding:23px 16px 18px; } .page-heading { margin-bottom:21px; } h1 { font-size:23px; } .eyebrow { font-size:9px; } .page-description { max-width:280px; font-size:10px; } .control-bar { flex-wrap:wrap; padding:13px 14px; gap:12px; } .settings { flex:1; gap:18px; } .control-actions { margin-left:auto; } .primary-button { padding:8px 12px; font-size:11px; } .setting select { max-width:165px; } .mode-note { padding:9px 14px; font-size:9px; } .issue-panel { padding:21px 18px 18px; min-height:180px; } h2 { font-size:17px; } .issue-body { font-size:11px; } .issue-header { align-items:flex-start; } .issue-label { font-size:9px; } .tag { font-size:8px; } .phase-bar { padding:12px 17px; gap:5px; } .phase { font-size:9px; } .phase-index { width:14px; height:14px; font-size:8px; } .editor-tabs { padding:0 16px; height:47px; } .tabs { gap:15px; } .editor-actions { gap:10px; } .editor-area,.empty-state,.diff-container { min-height:310px; } .run-rail { grid-template-columns:160px minmax(0,1fr); } .rail-header,.trace-heading { padding-left:16px; padding-right:16px; } .rail-title { font-size:10px; gap:5px; } .rail-title svg { display:none; } .state-pill { font-size:8px; padding:2px 5px; } .metrics { margin-left:16px; margin-right:12px; gap:14px; } .metric-value { font-size:17px; } .trace-list { padding-left:16px; padding-right:16px; } .bottom-note { font-size:8px; gap:10px; } .bottom-note span:last-child { display:none; } .notice { right:18px; bottom:18px; } }
+    @media (prefers-reduced-motion:reduce) { *,*:before,*:after { animation:none!important; scroll-behavior:auto!important; } }
+    @media (max-width:990px) { .run-evidence { grid-column:1/-1; margin-bottom:0; } }
+    @media (max-width:700px) { .editor-tabs { gap:11px; } .tabs { gap:13px; } .editor-actions { gap:11px; } .tab { font-size:9px; flex-shrink:0; } .code-browser { grid-template-columns:minmax(0,1fr); } .file-explorer { border-right:0; border-bottom:1px solid #434b39; } .file-explorer-header { padding:10px 13px; } .file-list { display:flex; gap:3px; max-height:120px; padding:4px 5px; } .file-button { flex:0 0 144px; width:144px; } .code-lines { min-height:240px; } .source-switch button { padding:3px 5px; } .run-evidence { margin-left:16px; margin-right:16px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="任务导航">
+      <a class="brand" href="/" aria-label="PatchForge 首页">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36" width="34" height="34" fill="none"><path d="M18 3v30M3 18h30M7.4 7.4l21.2 21.2M7.4 28.6 28.6 7.4" stroke="currentColor" stroke-width="5"/><circle cx="18" cy="18" r="5" fill="#222420"/></svg></span>
+        <span class="brand-name">PatchForge</span>
+      </a>
+      <div class="brand-sub">A CODING AGENT LAB</div>
+      <div class="workspace-link"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor"/><path d="M2 7h16M7 7v10" stroke="currentColor"/></svg><span>修复工作台</span><span class="small-key">01</span></div>
+      <nav aria-label="修复任务">
+        <div class="sidebar-heading">BENCHMARK TASKS <span id="task-count" class="count">—</span></div>
+        <div id="task-list" class="task-list"><div class="sidebar-empty">正在读取任务…</div></div>
+      </nav>
+      <section class="history-section" aria-label="最近运行">
+        <div class="sidebar-heading">RECENT RUNS <span class="count" id="run-count">—</span></div>
+        <div id="run-list" class="run-list"><div class="sidebar-empty">尚无运行记录</div></div>
+      </section>
+      <div class="sidebar-footer">
+        <div class="local-label"><span class="status-dot" id="sidebar-dot"></span><span>LOCAL WORKSPACE</span></div>
+        <p class="footer-caption">可追溯的推理，可验证的补丁。</p>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Workspace</span><span class="slash">/</span><strong>Agent workbench</strong></div>
+        <div class="topbar-right"><span class="version" id="version">PATCHFORGE</span><span class="connection"><span class="status-dot" id="connection-dot"></span><span id="connection-text">连接中</span></span></div>
+      </header>
+      <div class="page">
+        <div class="connection-error" id="connection-error" hidden><span id="connection-error-text"></span><button class="secondary-button" id="retry-button" type="button">重试连接</button></div>
+        <div class="page-heading">
+          <div><p class="eyebrow"><span class="accent">//</span> FROM ISSUE TO VERIFIED PATCH</p><h1>把问题，修成可验证的补丁。</h1><p class="page-description">一个完整的 Coding Agent 闭环：理解问题、修改代码、执行测试、交付补丁。</p></div>
+          <div class="heading-note">READ. REPAIR. VERIFY.<br>每一步，都有据可查。</div>
+        </div>
+        <div class="control-bar">
+          <div class="settings">
+            <div class="setting"><label for="mode">运行模式</label><select id="mode"><option value="demo">脚本演示 · 无 LLM</option><option value="live" disabled>真实模型 · 未配置</option></select></div>
+            <div class="setting"><label for="strategy">修复策略</label><select id="strategy"><option value="repair">测试反馈迭代</option><option value="direct">单轮直接修复</option></select></div>
+          </div>
+          <div class="control-actions">
+            <button class="secondary-button danger-button" id="cancel-button" type="button" hidden><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="8" height="8" rx="1"/></svg>停止</button>
+            <button class="primary-button" id="start-button" type="button" disabled><svg id="start-icon" width="11" height="12" viewBox="0 0 11 12" fill="currentColor" aria-hidden="true"><path d="m2 1 8 5-8 5V1Z"/></svg><span id="start-label">开始修复</span></button>
+          </div>
+        </div>
+        <div class="mode-note"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor"/><path d="M8 7v4M8 4.5v1" stroke="currentColor"/></svg><span id="mode-note"><strong>脚本演示模式</strong> · 展示预设修复流程，不调用模型。测试会实际执行；结果不代表模型能力。</span></div>
+        <section class="workbench" aria-label="代码修复工作区">
+          <div class="editor-column">
+            <section class="issue-panel" aria-labelledby="issue-title">
+              <div class="issue-header"><div class="issue-label"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg><span id="issue-id">ISSUE / —</span></div><div class="tags" id="issue-tags"></div></div>
+              <h2 id="issue-title">选择一个问题，开始修复。</h2>
+              <p class="issue-body" id="issue-body">正在加载内置修复任务。每个任务都有独立代码、可见测试与保留验收测试。</p>
+              <p class="source-note" id="source-note" hidden></p>
+              <details class="provenance" id="task-provenance" hidden><summary>查看任务来源与复现说明</summary><div class="provenance-content" id="provenance-content"></div></details>
+            </section>
+            <div class="phase-bar" aria-label="修复阶段" id="phase-bar">
+              <div class="phase" data-phase="0"><span class="phase-index">1</span><span>理解问题</span></div><span class="phase-line"></span>
+              <div class="phase" data-phase="1"><span class="phase-index">2</span><span>修改代码</span></div><span class="phase-line"></span>
+              <div class="phase" data-phase="2"><span class="phase-index">3</span><span>测试验证</span></div><span class="phase-line"></span>
+              <div class="phase" data-phase="3"><span class="phase-index">4</span><span>交付补丁</span></div>
+            </div>
+            <div class="editor-tabs">
+              <div class="tabs" role="tablist" aria-label="运行详情">
+                <button class="tab" id="tab-diff" role="tab" aria-selected="true" aria-controls="panel-diff" data-tab="diff">补丁审阅</button>
+                <button class="tab" id="tab-code" role="tab" aria-selected="false" aria-controls="panel-code" data-tab="code" tabindex="-1">代码浏览</button>
+                <button class="tab" id="tab-tests" role="tab" aria-selected="false" aria-controls="panel-tests" data-tab="tests" tabindex="-1">测试结果</button>
+                <button class="tab" id="tab-events" role="tab" aria-selected="false" aria-controls="panel-events" data-tab="events" tabindex="-1">运行事件</button>
+                <button class="tab" id="tab-evaluation" role="tab" aria-selected="false" aria-controls="panel-evaluation" data-tab="evaluation" tabindex="-1">评测报告</button>
+              </div>
+              <div class="editor-actions">
+                <button class="icon-button" id="copy-button" type="button" aria-label="复制补丁" title="复制补丁" disabled><svg width="13" height="14" viewBox="0 0 16 17" fill="none" aria-hidden="true"><rect x="5" y="5" width="9" height="10" rx="1" stroke="currentColor"/><path d="M11 5V2H2v10h3" stroke="currentColor"/></svg></button>
+                <button class="icon-button" id="download-button" type="button" aria-label="下载补丁" title="下载补丁" disabled><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 1v9m-3-3 3 3 3-3M2 10v4h12v-4" stroke="currentColor" stroke-linejoin="round"/></svg></button>
+                <button class="icon-button" id="bundle-button" type="button" aria-label="下载复现包 ZIP" title="下载复现包 ZIP" disabled><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m8 1 6 3.5v7L8 15l-6-3.5v-7L8 1Z M2 4.5 8 8l6-3.5M8 8v7M5 2.8l6 3.5" stroke="currentColor" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+            <div class="editor-area">
+              <section id="panel-diff" role="tabpanel" aria-labelledby="tab-diff">
+                <div id="diff-empty" class="empty-state"><svg class="empty-symbol" viewBox="0 0 57 64" fill="none" aria-hidden="true"><path d="M12 5h25l10 10v42H12z" stroke="currentColor" opacity=".5"/><path d="M37 5v11h10M19 26h21M19 34h12M19 42h15" stroke="currentColor" opacity=".45"/><rect x="4" y="29" width="20" height="20" rx="3" fill="#f9faf2" stroke="currentColor" opacity=".9"/><path d="M9 39h10M14 34v10" stroke="currentColor"/><circle cx="44" cy="50" r="9" fill="#f9faf2" stroke="currentColor"/><path d="m40 50 3 3 5-6" stroke="currentColor"/></svg><h3 id="empty-title">下一份补丁，从一个问题开始。</h3><p id="empty-description">选择左侧任务，启动修复。代码变更会在这里逐行呈现，并由测试验证。</p><div class="empty-shortcut"><kbd>Ctrl</kbd><span>+</span><kbd>Enter</kbd><span>开始修复</span></div></div>
+                <div id="diff-content" class="diff-container" hidden><div class="diff-info"><span id="diff-filename">working-tree.patch</span><span id="diff-stats"></span></div><div id="diff-lines" class="diff-lines"></div></div>
+              </section>
+              <section id="panel-code" role="tabpanel" aria-labelledby="tab-code" hidden><div class="code-browser"><aside class="file-explorer" aria-label="代码文件"><div class="file-explorer-header"><span>FILES</span><span id="file-count">—</span></div><div class="file-list" id="file-list"></div></aside><div class="code-reader"><div class="code-reader-toolbar"><span class="code-file-path" id="code-file-path">选择一个文件</span><div class="source-switch" id="source-switch" role="group" aria-label="文件版本" hidden><button id="source-original" type="button" aria-pressed="false">原始</button><button id="source-current" type="button" aria-pressed="true">当前</button></div></div><div class="code-empty" id="code-message">打开代码浏览后，读取任务文件。</div><div class="code-lines" id="code-lines" hidden></div><div class="code-file-info" id="code-file-info" hidden></div></div></div></section>
+              <section id="panel-tests" class="test-view" role="tabpanel" aria-labelledby="tab-tests" hidden><p class="test-intro">基线测试记录修复前的状态；保留测试仅在验收时使用，Agent 无法读取。</p><div id="test-suites"></div></section>
+              <section id="panel-events" class="events-view" role="tabpanel" aria-labelledby="tab-events" hidden><div id="event-details"></div></section>
+              <section id="panel-evaluation" class="evaluation-view" role="tabpanel" aria-labelledby="tab-evaluation" hidden><div class="evaluation-heading"><h3>基准评测</h3><button class="secondary-button" id="refresh-evaluation" type="button">刷新报告</button></div><p>内置合成任务用于验证工程闭环。脚本演示通过率不能用于衡量模型的代码修复能力。</p><div id="evaluation-content"></div></section>
+            </div>
+          </div>
+          <aside class="run-rail" aria-label="运行轨迹">
+            <div class="rail-header"><h3 class="rail-title"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor"/><circle cx="3" cy="4" r="1.5" fill="#fafbf5" stroke="currentColor"/><circle cx="8" cy="8" r="1.5" fill="#fafbf5" stroke="currentColor"/><circle cx="5" cy="12" r="1.5" fill="#fafbf5" stroke="currentColor"/></svg>运行控制台</h3><span id="state-pill" class="state-pill"><span class="status-dot" id="state-dot"></span><span id="state-label">等待运行</span></span></div>
+            <div class="metrics">
+              <div class="metric"><label>执行步数</label><div class="metric-value" id="metric-steps">— <span>/ 12</span></div></div>
+              <div class="metric"><label>工具调用</label><div class="metric-value" id="metric-tools">—</div></div>
+              <div class="metric"><label>运行用时</label><div class="metric-value" id="metric-time">— <span>s</span></div></div>
+              <div class="metric"><label id="token-label">模型用量</label><div class="metric-value" id="metric-tokens">—</div></div>
+            </div>
+            <div class="trace-heading"><span>EXECUTION TRACE</span><span id="event-count">0 EVENTS</span></div>
+            <div class="trace-list" id="trace-list"><div class="trace-empty"><strong>准备就绪，等待任务。</strong>文件读取、代码编辑、测试执行<br>都会记录在这里。</div></div>
+            <div id="run-summary" class="run-summary" hidden></div>
+            <div class="run-evidence" id="run-evidence" hidden><div class="evidence-row" id="context-evidence" hidden><strong>上下文字符数</strong><span id="context-value"></span></div><div class="evidence-row" id="version-evidence" hidden><strong id="verification-status">工作区版本</strong><span id="verification-hash" class="evidence-code"></span></div></div>
+            <div class="rail-foot" id="rail-foot">NO ACTIVE RUN<br>运行数据仅保存在本地</div>
+          </aside>
+        </section>
+        <div class="bottom-note"><span id="environment-note">检查执行环境中…</span><span>BUILT TO BE INSPECTED.</span></div>
+      </div>
+    </main>
+  </div>
+  <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const activeStates = new Set(['queued','running']);
+    const statusNames = { queued:'等待执行', running:'执行中', completed:'已完成', failed:'运行失败', cancelled:'已取消', budget_exhausted:'预算耗尽', interrupted:'运行中断' };
+    const state = { config:null, tasks:[], runs:[], selectedTask:null, run:null, evaluation:null, tab:'diff', starting:false, cancelling:false, loadingRun:false, pollTimer:null, selectionVersion:0, noticeTimer:null, lastEventSignature:'', lastDiff:null, lastTests:null, disconnected:false, sourceKey:null, sourceVersion:0, sourceFiles:[], sourceFile:null, sourcePath:null, sourceOriginal:false };
+
+    function el(tag, className, value) { const node=document.createElement(tag); if(className)node.className=className; if(value!==undefined&&value!==null)node.textContent=String(value); return node; }
+    function setText(id,value) { $(id).textContent=value==null?'—':String(value); }
+    function asText(value) { if(value==null)return ''; if(typeof value==='string')return value; try{return JSON.stringify(value,null,2);}catch{return String(value);} }
+    function notice(message,error=false) { clearTimeout(state.noticeTimer); $('notice').textContent=message; $('notice').className='notice'+(error?' error':''); $('notice').hidden=false; state.noticeTimer=setTimeout(()=>{$('notice').hidden=true;},error?8000:3500); }
+    function timeOf(value) { const date=new Date(value); return Number.isNaN(date.getTime())?'—':date.toLocaleTimeString('zh-CN',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+    function shortTime(value) { const date=new Date(value); return Number.isNaN(date.getTime())?'—':date.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); }
+    function setConnection(ok,message) { state.disconnected=!ok; $('connection-dot').className='status-dot '+(ok?'ok':'error'); $('sidebar-dot').className='status-dot '+(ok?'ok':'error'); setText('connection-text',ok?'本地连接正常':'连接中断'); $('connection-error').hidden=ok; if(!ok)setText('connection-error-text',message||'无法连接本地服务，请检查服务是否仍在运行。'); }
+    async function api(path,options={}) {
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),15000);
+      try {
+        const headers={Accept:'application/json',...options.headers};
+        if(options.method&&options.method!=='GET') { headers['Content-Type']='application/json'; headers['X-CSRF-Token']=state.config?.csrf_token||''; }
+        const response=await fetch(path,{...options,headers,signal:controller.signal,cache:'no-store'});
+        let data; const contentType=response.headers.get('content-type')||'';
+        if(contentType.includes('application/json'))data=await response.json(); else data=await response.text();
+        if(!response.ok) { const detail=typeof data==='object'?(data.error||data.detail||data.message):data; const error=new Error(asText(detail)||`请求失败 (${response.status})`);error.status=response.status;throw error; }
+        return data;
+      } catch(error) { if(error.name==='AbortError')throw new Error('请求超时，请检查本地服务状态。'); throw error; }
+      finally { clearTimeout(timeout); }
+    }
+
+    function renderTasks() {
+      const list=$('task-list'); list.replaceChildren(); setText('task-count',String(state.tasks.length).padStart(2,'0'));
+      if(!state.tasks.length)list.append(el('div','sidebar-empty','暂无可用任务'));
+      state.tasks.forEach((task,index)=>{
+        const button=el('button','task-button'+(state.selectedTask?.id===task.id?' active':'')); button.type='button'; button.setAttribute('aria-pressed',String(state.selectedTask?.id===task.id));
+        button.append(el('span','task-number',String(index+1).padStart(2,'0')));
+        const content=el('span'); content.append(el('span','task-name',task.title||task.id));
+        content.append(el('span','task-meta',[task.category,task.difficulty].filter(Boolean).join(' / ')||task.id)); button.append(content);
+        button.addEventListener('click',()=>selectTask(task.id)); list.append(button);
+      });
+    }
+
+    function renderRuns() {
+      const list=$('run-list'); list.replaceChildren(); setText('run-count',String(state.runs.length).padStart(2,'0'));
+      if(!state.runs.length)list.append(el('div','sidebar-empty','完成第一轮修复后，记录会保存在这里。'));
+      state.runs.slice(0,7).forEach(run=>{
+        const button=el('button','run-button'+(state.run?.id===run.id?' active':'')); button.type='button'; button.setAttribute('aria-pressed',String(state.run?.id===run.id));
+        button.append(el('span','status-dot '+(run.status||'')));
+        const content=el('span','run-text'); content.append(el('span','run-name',run.title||state.tasks.find(t=>t.id===run.task_id)?.title||run.task_id));
+        content.append(el('span','run-meta',`${run.mode==='live'?'LIVE':'DEMO'} · ${shortTime(run.created_at)} · ${statusNames[run.status]||run.status||''}`)); button.append(content);
+        button.addEventListener('click',()=>openRun(run.id)); list.append(button);
+      });
+    }
+
+    function renderIssue() {
+      const task=state.selectedTask; setText('issue-id',task?`ISSUE / ${task.id}`:'ISSUE / —'); setText('issue-title',task?.title||'选择一个问题，开始修复。');
+      setText('issue-body',task?.issue||'从左侧选择一个内置合成任务，查看问题描述与修复目标。');
+      $('issue-tags').replaceChildren();
+      if(task)[task.category,task.difficulty].filter(Boolean).forEach(value=>$('issue-tags').append(el('span','tag',value)));
+      const sourceNames={development:'合成任务',imported:'导入任务','upstream-replay':'上游复现'};
+      if(task)$('issue-tags').append(el('span','tag source',sourceNames[task.split]||'来源未声明'));
+      const sourceNotes={development:'开发用合成任务，用于验证工程闭环，不属于真实仓库基准。',imported:'导入的仓库快照；修复效果以本任务的测试与验收约定为准。','upstream-replay':'公开历史修复的复现任务；已知上游补丁，不能作为盲测结果。'};
+      $('source-note').hidden=!task;setText('source-note',task?(sourceNotes[task.split]||'此任务尚未声明来源类型。'):'');
+      renderProvenance(task);
+      renderTasks();
+    }
+
+    function renderProvenance(task) {
+      const provenance=task?.provenance; const content=$('provenance-content');content.replaceChildren();
+      if(provenance&&typeof provenance==='object') {
+        [['repository_url','源码仓库 ↗'],['source_url','复现来源 ↗']].forEach(([key,label])=>{if(!provenance[key])return;try{const url=new URL(provenance[key]);if(!['https:','http:'].includes(url.protocol))return;const link=el('a','',label);link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';content.append(link);}catch{}});
+        [['base_commit','基线提交'],['fix_commit','上游修复'],['license','许可证'],['reproduction_note','复现说明']].forEach(([key,label])=>{if(provenance[key])content.append(el('p','',`${label}：${asText(provenance[key])}`));});
+      }
+      $('task-provenance').hidden=!content.childElementCount;
+    }
+
+    function renderModeNote() {
+      const mode=state.run?.mode||$('mode').value;
+      const currentPrefix=state.run?'当前记录：':'';
+      setText('mode-note',mode==='demo'?`${currentPrefix}脚本演示 · 展示预设修复流程，不调用模型。测试会实际执行；结果不代表模型能力。`:`${currentPrefix}真实模型 · ${modelName()}。在独立工作区内执行修复；任务来源与验收范围见下方说明。`);
+    }
+    function modelName() { const model=state.config?.model; return typeof model==='string'?model:(model?.name||model?.model||'已配置模型'); }
+
+    function renderControls() {
+      const running=activeStates.has(state.run?.status); const busy=state.starting||state.loadingRun;
+      const demoUnavailable=state.selectedTask?.demo_available===false;
+      $('mode').querySelector('option[value="demo"]').disabled=demoUnavailable;
+      if(demoUnavailable&&$('mode').value==='demo'&&state.config?.live_available)$('mode').value='live';
+      const modeUnavailable=($('mode').value==='demo'&&demoUnavailable)||($('mode').value==='live'&&!state.config?.live_available);
+      $('start-button').disabled=!state.config||!state.selectedTask||running||busy||modeUnavailable;
+      $('mode').disabled=running||busy; $('strategy').disabled=running||busy;
+      setText('start-label',state.starting?'正在创建…':state.loadingRun?'读取记录…':running?'正在修复…':state.run?'再次修复':'开始修复');
+      $('start-icon').hidden=running||state.starting;
+      $('cancel-button').hidden=!running; $('cancel-button').disabled=state.cancelling||busy;
+      $('copy-button').disabled=!state.run?.diff; $('download-button').disabled=!state.run?.diff;
+      $('bundle-button').disabled=!state.run?.workspace_sha256;
+      renderModeNote();
+      if(demoUnavailable&&!state.run)setText('mode-note',state.config?.live_available?'导入任务 · 不提供预设演示补丁，将使用真实模型执行修复。':'导入任务 · 不提供脚本演示。请配置真实模型后运行，或选择左侧内置任务体验演示。');
+    }
+
+    function metric(id,main,suffix) { const node=$(id); node.replaceChildren(document.createTextNode(String(main))); if(suffix)node.append(document.createTextNode(' '),el('span','',suffix)); }
+    function renderMetrics() {
+      const run=state.run; const status=run?.status||'';
+      $('state-pill').className='state-pill '+status; $('state-dot').className='status-dot '+status; setText('state-label',statusNames[status]||'等待运行');
+      metric('metric-steps',run?.steps??'—',`/ ${run?.max_steps||12}`); metric('metric-tools',run?.tool_calls??'—');
+      const started=run?new Date(run.created_at).getTime():NaN; const ended=run?(activeStates.has(run.status)?Date.now():new Date(run.updated_at).getTime()):NaN;
+      const seconds=Number.isFinite(started)&&Number.isFinite(ended)?Math.max(0,(ended-started)/1000):null;
+      metric('metric-time',seconds===null?'—':seconds<100?seconds.toFixed(1):Math.round(seconds),'s');
+      const tokens=run?.tokens; const tokenLabel=run?.mode==='demo'?'脚本演示 · 无 LLM':run&&run.usage_complete===false?'模型用量 · 不完整':'模型用量';
+      setText('token-label',tokenLabel); metric('metric-tokens',run?.mode==='demo'?'—':tokens==null?'—':Number(tokens).toLocaleString('zh-CN'),tokens!=null&&run?.mode!=='demo'?'tokens':'');
+      setText('rail-foot',run?`${run.mode==='live'?'LIVE MODEL':'SCRIPTED DEMO'} / ${run.strategy==='direct'?'DIRECT':'REPAIR'}\nRUN ${run.id}`:'NO ACTIVE RUN\n运行数据仅保存在本地'); $('rail-foot').style.whiteSpace='pre-line';
+      const message=run?.error||run?.summary; $('run-summary').hidden=!message; $('run-summary').className='run-summary'+(run?.error?' run-error':''); if(message)setText('run-summary',asText(message));
+      const context=run?.context_stats;const digest=run?.workspace_sha256;const testedDigest=run?.visible?.workspace_sha256;
+      $('run-evidence').hidden=!context&&!digest;$('context-evidence').hidden=!context;$('version-evidence').hidden=!digest;
+      if(context){const format=value=>value==null?'—':Number(value).toLocaleString('zh-CN');setText('context-value',`初始 ${format(context.initial_chars)} · ${format(context.before_chars)} → ${format(context.after_chars)} · 已压缩 ${format(context.compacted_groups)} 组`);}
+      if(digest){const match=digest===testedDigest;setText('verification-status',match?(run.visible?.passed?'可见测试已验证此版本':'此版本已测试 · 未通过'):'当前版本尚无匹配的可见测试');$('verification-status').className=match&&run.visible?.passed?'evidence-match':'evidence-pending';setText('verification-hash',`SHA256 ${digest}`);}
+      let phase=-1;
+      if(run) { const p=String(run.phase||'').toLowerCase(); if(/complet|deliver|final|hidden|accept/.test(p)||run.status==='completed')phase=3; else if(/test|valid|verify/.test(p))phase=2; else if(/edit|patch|repair|write|model|agent/.test(p))phase=1; else if(run.status!=='queued')phase=0; }
+      document.querySelectorAll('.phase').forEach(node=>{ const index=Number(node.dataset.phase); node.classList.toggle('done',index<phase||(run?.status==='completed'&&index===phase)); node.classList.toggle('active',index===phase&&run?.status!=='completed'); });
+    }
+
+    function renderDiff() {
+      const diff=state.run?.diff||''; const running=activeStates.has(state.run?.status);
+      $('diff-empty').hidden=!!diff; $('diff-content').hidden=!diff;
+      setText('empty-title',running?'Agent 正在处理这个问题。':state.run?'这次运行尚未产出补丁。':'下一份补丁，从一个问题开始。');
+      setText('empty-description',running?'工具调用与测试反馈将实时记录。首个代码变更完成后，补丁会出现在这里。':state.run?'查看右侧运行轨迹或测试结果，了解本次运行的状态。':'选择左侧任务，启动修复。代码变更会在这里逐行呈现，并由测试验证。');
+      if(diff===state.lastDiff)return; state.lastDiff=diff; const container=$('diff-lines'); container.replaceChildren(); if(!diff)return;
+      let added=0,removed=0; const fragment=document.createDocumentFragment(); const lines=diff.split('\n');
+      lines.forEach((line,index)=>{ let type=''; if(line.startsWith('diff ')||line.startsWith('--- ')||line.startsWith('+++ '))type='file'; else if(line.startsWith('@@'))type='hunk'; else if(line.startsWith('+')){type='add';added++;}else if(line.startsWith('-')){type='remove';removed++;}
+        const node=el('div','diff-line '+type); node.append(el('span','line-number',index+1),el('span','line-text',line||' ')); fragment.append(node); });
+      container.append(fragment); setText('diff-filename',`${state.run?.task_id||'working-tree'}.patch`); setText('diff-stats',`${state.run?.files_changed??'—'} files   +${added}  −${removed}`);
+    }
+
+    function renderTests() {
+      const run=state.run; const signature=JSON.stringify([run?.baseline,run?.visible,run?.hidden]); if(signature===state.lastTests)return; state.lastTests=signature;
+      const container=$('test-suites'); container.replaceChildren();
+      [['baseline','修复前 · 基线测试','确认原始问题可以复现'],['visible','修复后 · 可见测试','反馈可用于下一轮修复'],['hidden','最终验收 · 保留测试','独立执行，内容不提供给 Agent']].forEach(([key,title,description])=>{
+        const test=run?.[key]; const article=el('article','test-suite'); const header=el('header'); header.append(el('h3','',title));
+        let text='未执行'; if(test)text=test.passed?`${test.total??'?'} tests · PASS`:`${test.total??'?'} tests · FAIL`;
+        header.append(el('span','test-result'+(test?(test.passed?' pass':' fail'):''),text)); article.append(header);
+        if(test)article.append(el('pre','',test.output||'测试未返回输出。'));
+        let caption=description; if(test){ const details=[]; if(test.failures!=null)details.push(`${Array.isArray(test.failures)?test.failures.length:test.failures} failures`); if(test.errors!=null)details.push(`${Array.isArray(test.errors)?test.errors.length:test.errors} errors`); if(test.elapsed_ms!=null)details.push(`${Number(test.elapsed_ms).toFixed(0)} ms`); if(details.length)caption+=' · '+details.join(' / '); }
+        article.append(el('div','test-caption',caption)); container.append(article);
+      });
+    }
+
+    function renderEvents() {
+      const events=state.run?.events||[]; const signature=String(state.run?.id||'')+':'+events.length+':'+JSON.stringify(events.at(-1)||null);
+      if(signature===state.lastEventSignature)return; state.lastEventSignature=signature;
+      const trace=$('trace-list'); const atBottom=trace.scrollHeight-trace.scrollTop-trace.clientHeight<45;
+      const openSeqs=new Set([...$('event-details').querySelectorAll('details[open]')].map(node=>node.dataset.seq));
+      trace.replaceChildren(); $('event-details').replaceChildren(); setText('event-count',`${events.length} EVENTS`);
+      if(!events.length) { const empty=el('div','trace-empty'); empty.append(el('strong','',state.run?'正在等待首个事件。':'准备就绪，等待任务。'),document.createTextNode('文件读取、代码编辑、测试执行都会记录在这里。')); trace.append(empty); $('event-details').append(el('p','test-intro','尚无运行事件。启动修复后，点击任一事件可查看完整数据。')); return; }
+      events.forEach(event=>{
+        const item=el('div','trace-item'+(/error|fail/i.test(event.kind||'')?' error':'')); item.append(el('p','trace-item-title',event.title||event.kind||'事件'));
+        const time=el('time','',timeOf(event.time)); if(event.time)time.dateTime=event.time; item.append(time,el('div','trace-kind',`${String(event.seq??'').padStart(2,'0')} / ${event.kind||'event'}`)); trace.append(item);
+        const details=el('details','event-detail'); details.dataset.seq=String(event.seq); details.open=openSeqs.has(String(event.seq)); const summary=el('summary'); summary.append(el('span','',event.title||event.kind||'事件'),el('span','event-kind',event.kind),el('time','',timeOf(event.time))); details.append(summary,el('pre','',asText(event.data)||'没有额外数据。')); $('event-details').append(details);
+      });
+      if(atBottom)trace.scrollTop=trace.scrollHeight;
+    }
+
+    function sourceScope() { return state.run?`/api/runs/${encodeURIComponent(state.run.id)}`:state.selectedTask?`/api/tasks/${encodeURIComponent(state.selectedTask.id)}`:null; }
+    function sourceMessage(text,retry=false) {
+      const message=$('code-message');message.replaceChildren(el('div','',text));message.hidden=false;$('code-lines').hidden=true;$('code-file-info').hidden=true;
+      if(retry){const button=el('button','secondary-button','重新读取');button.type='button';button.addEventListener('click',()=>loadFiles(true));message.append(button);}
+    }
+    function renderFiles() {
+      const list=$('file-list');list.replaceChildren();setText('file-count',state.sourceFiles.length);
+      state.sourceFiles.forEach(file=>{
+        const button=el('button','file-button'+(file.path===state.sourcePath?' active':''));button.type='button';button.setAttribute('aria-pressed',String(file.path===state.sourcePath));button.title=file.path;
+        const parts=String(file.path).split('/');const filename=parts.pop();button.style.paddingLeft=(10+Math.min(parts.length,3)*8)+'px';
+        if(parts.length)button.append(el('span','file-folder',parts.join('/')+'/'));
+        button.append(el('span','file-name',filename));const flags=el('span','file-flags');flags.append(el('span','',file.editable?'可修改':'只读'));if(file.changed)flags.append(el('span','changed','已变更'));if(file.lines!=null)flags.append(el('span','',`${file.lines} 行`));button.append(flags);
+        button.addEventListener('click',()=>loadSource(file.path));list.append(button);
+      });
+    }
+    async function loadFiles(force=false) {
+      const scope=sourceScope();if(!scope){sourceMessage('选择任务后可查看原始代码。');return;}
+      const key=scope+':'+(state.run?.workspace_sha256||state.run?.updated_at||'original');if(!force&&key===state.sourceKey)return;
+      const previousScope=state.sourceKey?.split(':')[0];const previousPath=previousScope===scope?state.sourcePath:null;
+      state.sourceKey=key;const version=++state.sourceVersion;state.sourceFiles=[];state.sourceFile=null;renderFiles();sourceMessage('正在读取文件目录…');setText('code-file-path','读取目录中');$('source-switch').hidden=!state.run;
+      try {
+        const result=await api(scope+'/files');if(version!==state.sourceVersion||scope!==sourceScope())return;
+        state.sourceFiles=Array.isArray(result.files)?result.files:[];
+        if(!state.sourceFiles.length){renderFiles();sourceMessage('这个任务没有可浏览的代码文件。');return;}
+        state.sourcePath=state.sourceFiles.some(file=>file.path===previousPath)?previousPath:(state.sourceFiles.find(file=>file.changed)||state.sourceFiles.find(file=>file.editable)||state.sourceFiles[0]).path;
+        renderFiles();await loadSource(state.sourcePath);
+      }catch(error){if(version!==state.sourceVersion||scope!==sourceScope())return;sourceMessage(error.status===404?'当前服务版本不支持代码浏览。升级服务后可读取任务及运行文件。':`文件目录读取失败：${error.message}`,true);setText('code-file-path','无法读取目录');}
+    }
+    async function loadSource(path) {
+      const scope=sourceScope();if(!scope)return;const version=++state.sourceVersion;state.sourcePath=path;state.sourceFile=null;renderFiles();sourceMessage('正在读取文件…');setText('code-file-path',path);$('source-switch').hidden=!state.run;
+      try{const file=await api(scope+'/file?path='+encodeURIComponent(path));if(version!==state.sourceVersion||scope!==sourceScope())return;state.sourceFile=file;renderSource();}
+      catch(error){if(version!==state.sourceVersion||scope!==sourceScope())return;sourceMessage(`代码读取失败：${error.message}`,true);}
+    }
+    function renderSource() {
+      const file=state.sourceFile;if(!file)return;const original=!!state.run&&state.sourceOriginal;
+      $('source-original').setAttribute('aria-pressed',String(original));$('source-current').setAttribute('aria-pressed',String(!original));
+      const content=asText(original?file.original:file.content);const lines=content.split('\n');const fragment=document.createDocumentFragment();
+      lines.forEach((line,index)=>{const node=el('div','diff-line');node.append(el('span','line-number',index+1),el('span','line-text',line||' '));fragment.append(node);});$('code-lines').replaceChildren(fragment);$('code-lines').hidden=false;$('code-message').hidden=true;$('code-file-info').hidden=false;
+      const digest=original?'原始版本':file.sha256?`SHA256 ${file.sha256}`:'未提供文件指纹';setText('code-file-info',`${file.editable?'可修改':'只读'} · ${lines.length} 行 · ${digest}`);setText('code-file-path',file.path||state.sourcePath);
+    }
+    function renderRun() { renderControls(); renderMetrics(); renderDiff(); renderTests(); renderEvents(); if(state.tab==='code')loadFiles(); }
+    function selectTask(id) {
+      const task=state.tasks.find(item=>item.id===id); if(!task)return; state.selectionVersion++; clearTimeout(state.pollTimer); state.selectedTask=task; state.run=null; state.loadingRun=false; state.lastDiff=null; state.lastTests=null; state.lastEventSignature=''; renderIssue(); renderRuns(); renderRun();
+    }
+
+    function upsertRun(run) { const index=state.runs.findIndex(item=>item.id===run.id); if(index<0)state.runs.unshift(run);else state.runs[index]=run; state.runs.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))); }
+    function applyRun(run) { state.run=run; upsertRun(run); const task=state.tasks.find(item=>item.id===run.task_id); if(task&&task.id!==state.selectedTask?.id){state.selectedTask=task;renderIssue();} renderRuns(); renderRun(); }
+
+    async function openRun(id) {
+      const version=++state.selectionVersion; clearTimeout(state.pollTimer); state.loadingRun=true; renderControls();
+      try { const run=await api(`/api/runs/${encodeURIComponent(id)}`); if(version!==state.selectionVersion)return; $('mode').value=run.mode; $('strategy').value=run.strategy; state.lastDiff=null; state.lastTests=null; state.lastEventSignature=''; applyRun(run); setConnection(true); schedulePoll(); }
+      catch(error) { if(version===state.selectionVersion)notice(`读取运行失败：${error.message}`,true); }
+      finally { if(version===state.selectionVersion){state.loadingRun=false;renderControls();} }
+    }
+
+    function schedulePoll() { clearTimeout(state.pollTimer); if(activeStates.has(state.run?.status))state.pollTimer=setTimeout(poll,1000); }
+    async function poll() {
+      const id=state.run?.id; const version=state.selectionVersion; if(!id)return;
+      try { const run=await api(`/api/runs/${encodeURIComponent(id)}`); if(version!==state.selectionVersion||state.run?.id!==id)return; applyRun(run);setConnection(true); }
+      catch(error) { if(version!==state.selectionVersion)return;setConnection(false,`运行状态同步失败：${error.message} 服务恢复后会继续同步。`); }
+      finally { if(version===state.selectionVersion&&state.run?.id===id)schedulePoll(); }
+    }
+
+    async function startRun() {
+      if($('start-button').disabled)return; const selectedTask=state.selectedTask; const version=++state.selectionVersion; state.starting=true; renderControls(); clearTimeout(state.pollTimer);
+      try {
+        const run=await api('/api/runs',{method:'POST',body:JSON.stringify({task_id:selectedTask.id,mode:$('mode').value,strategy:$('strategy').value,max_steps:12})});
+        upsertRun(run); if(version!==state.selectionVersion){renderRuns();notice('修复已启动，可在最近运行中查看。');return;}
+        state.lastDiff=null; state.lastTests=null; state.lastEventSignature=''; applyRun(run); activateTab('diff'); setConnection(true); schedulePoll();
+      } catch(error) { notice(`无法启动修复：${error.message}`,true); }
+      finally { state.starting=false; renderControls(); }
+    }
+
+    async function cancelRun() {
+      const id=state.run?.id; if(!id||!activeStates.has(state.run?.status)||state.cancelling)return; state.cancelling=true; renderControls();
+      try { const result=await api(`/api/runs/${encodeURIComponent(id)}/cancel`,{method:'POST',body:'{}'}); if(state.run?.id===id){if(result?.id)applyRun(result);schedulePoll();} notice('已请求停止，等待当前步骤安全退出。'); }
+      catch(error){notice(`停止失败：${error.message}`,true);}
+      finally{state.cancelling=false;renderControls();}
+    }
+
+    function activateTab(name,focus=false) { state.tab=name; document.querySelectorAll('[data-tab]').forEach(button=>{const selected=button.dataset.tab===name;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1; if(selected&&focus)button.focus();}); ['diff','code','tests','events','evaluation'].forEach(value=>{$('panel-'+value).hidden=value!==name;});if(name==='code')loadFiles(); }
+
+    function evaluationSummaryTable(items) {
+      const wrap=el('div');wrap.style.overflowX='auto';const table=el('table','evaluation-table');const head=el('thead');const tr=el('tr');['策略','通过 / 运行','通过率','平均步数','平均 Tokens','平均耗时'].forEach(label=>tr.append(el('th','',label)));head.append(tr);table.append(head);const body=el('tbody');
+      items.forEach(item=>{const row=el('tr');const values=[item.strategy==='direct'?'单轮修复':item.strategy==='repair'?'反馈迭代':item.strategy,`${item.resolved??'—'} / ${item.runs??'—'}`,item.resolve_rate==null?'—':(Number(item.resolve_rate)*100).toFixed(1)+'%',item.mean_steps==null?'—':Number(item.mean_steps).toFixed(1),item.mean_tokens==null?'—':Math.round(Number(item.mean_tokens)).toLocaleString('zh-CN'),item.mean_elapsed_ms==null?'—':(Number(item.mean_elapsed_ms)/1000).toFixed(1)+' s'];values.forEach(value=>row.append(el('td','',value)));body.append(row);});table.append(body);wrap.append(table);return wrap;
+    }
+    function renderEvaluation() {
+      const container=$('evaluation-content'); container.replaceChildren(); const report=state.evaluation;
+      if(!report||report.available===false) { container.append(el('p','', '还没有评测报告。执行项目的基准评测后，报告会在这里显示。')); return; }
+      const data=report.report||report;
+      if(data.kind||data.generated_at)container.append(el('p','',`${data.kind==='live'?'真实模型评测':'脚本演示评测'}${data.model?' · '+data.model:''}${data.task_count!=null?' · '+data.task_count+' 个任务':''}${data.generated_at?' · '+shortTime(data.generated_at):''}`));
+      if(data.note)container.append(el('p','',asText(data.note)));
+      if(Array.isArray(data.summary)&&data.summary.length) {
+        container.append(evaluationSummaryTable(data.summary));
+        if(data.summary.some(item=>item.strategy==='direct')&&data.summary.some(item=>item.strategy==='repair'))container.append(el('p','','比较范围：两种策略使用相同的初始上下文选择，反馈迭代还能按需读取更多代码。结果同时受到上下文获取、调用预算和测试反馈的影响，不能单独归因于反馈。'));
+      } else if(data.summary)container.append(el('pre','evaluation-json',asText(data.summary)));
+      if(Array.isArray(data.by_split))data.by_split.forEach(group=>{
+        const section=el('section','evaluation-split');section.dataset.split=group.split;const names={development:'合成开发任务','upstream-replay':'公开上游复现',imported:'导入任务'};section.append(el('h4','',names[group.split]||group.split||'其他来源'));
+        const caption=[group.distinct_tasks!=null?`${group.distinct_tasks} 个独立任务`:null,group.split==='upstream-replay'?'已知公开修复，非独立盲测':group.split==='development'?'合成任务，验证工程闭环':null].filter(Boolean).join(' · ');if(caption)section.append(el('p','split-caption',caption));
+        if(Array.isArray(group.summary))section.append(evaluationSummaryTable(group.summary));
+        if(group.failure_counts&&Object.keys(group.failure_counts).length){const details=el('details','event-detail');details.append(el('summary','','失败类型'),el('pre','',asText(group.failure_counts)));section.append(details);}container.append(section);
+      });
+      const rows=data.results||data.rows;
+      if(Array.isArray(rows)&&rows.length&&typeof rows[0]==='object') {
+        const keys=Object.keys(rows[0]).filter(key=>!['events','diff','output','error','summary'].includes(key)&&typeof rows[0][key]!=='object').slice(0,7);
+        const wrap=el('div');wrap.style.overflowX='auto';const table=el('table','evaluation-table');const head=el('thead');const tr=el('tr');keys.forEach(key=>tr.append(el('th','',key)));head.append(tr);table.append(head);const body=el('tbody');rows.forEach(row=>{const line=el('tr');keys.forEach(key=>line.append(el('td','',asText(row[key]))));body.append(line);});table.append(body);wrap.append(table);container.append(wrap);
+        const details=el('details','event-detail');details.append(el('summary','','完整报告'),el('pre','',asText(data)));container.append(details);
+      } else if(!data.summary)container.append(el('pre','evaluation-json',asText(data)));
+    }
+    async function refreshEvaluation(showError=true) { $('refresh-evaluation').disabled=true; try{state.evaluation=await api('/api/evaluation');renderEvaluation();}catch(error){if(showError)notice(`评测报告读取失败：${error.message}`,true);else renderEvaluation();}finally{$('refresh-evaluation').disabled=false;} }
+
+    async function boot() {
+      $('retry-button').disabled=true;
+      try {
+        const [config,runs]=await Promise.all([api('/api/config'),api('/api/runs')]); state.config=config;state.tasks=Array.isArray(config.tasks)?config.tasks:[];state.runs=Array.isArray(runs.runs)?runs.runs:[];
+        state.runs.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+        const live=$('mode').querySelector('option[value="live"]'); live.disabled=!config.live_available;live.textContent=config.live_available?'真实模型 · '+modelName():'真实模型 · 未配置';
+        setText('version','v'+String(config.version||'0.1'));setConnection(true);
+        const docker=config.docker_available?(config.image_available?'Docker 沙箱就绪':'Docker 可用 · 执行镜像待构建'):'Docker 沙箱不可用';
+        const sourceCounts=[['development','合成任务'],['upstream-replay','上游复现'],['imported','导入任务']].map(([split,label])=>{const count=state.tasks.filter(task=>task.split===split).length;return count?`${label} ${count}`:null;}).filter(Boolean).join(' / ');
+        setText('environment-note',`${docker}  ·  ${sourceCounts||'任务来源待声明'}  ·  12 步运行预算  ·  ${config.live_available?'真实模型已配置':'真实模型尚未配置'}`);
+        if(!state.selectedTask&&state.tasks.length)selectTask(state.tasks[0].id);else {renderTasks();renderRuns();renderRun();}
+        const active=state.runs.find(run=>activeStates.has(run.status));if(!state.run&&active)await openRun(active.id);
+        refreshEvaluation(false);
+      } catch(error) {setConnection(false,`本地服务连接失败：${error.message}`);notice('无法加载工作台，请确认 PatchForge 服务正在运行。',true);}
+      finally {$('retry-button').disabled=false;renderControls();}
+    }
+
+    $('start-button').addEventListener('click',startRun);$('cancel-button').addEventListener('click',cancelRun);$('retry-button').addEventListener('click',boot);$('refresh-evaluation').addEventListener('click',()=>refreshEvaluation());
+    $('mode').addEventListener('change',renderControls);$('strategy').addEventListener('change',renderControls);
+    document.querySelectorAll('[data-tab]').forEach(button=>{button.addEventListener('click',()=>activateTab(button.dataset.tab));button.addEventListener('keydown',event=>{const names=['diff','code','tests','events','evaluation'];const index=names.indexOf(button.dataset.tab);let next=null;if(event.key==='ArrowRight')next=names[(index+1)%names.length];if(event.key==='ArrowLeft')next=names[(index+names.length-1)%names.length];if(event.key==='Home')next=names[0];if(event.key==='End')next=names.at(-1);if(next){event.preventDefault();activateTab(next,true);}});});
+    $('copy-button').addEventListener('click',async()=>{if(!state.run?.diff)return;try{await navigator.clipboard.writeText(state.run.diff);notice('补丁已复制。');}catch{notice('浏览器未允许访问剪贴板，请下载补丁。',true);}});
+    $('download-button').addEventListener('click',()=>{if(!state.run?.diff)return;const link=document.createElement('a');link.href=`/api/runs/${encodeURIComponent(state.run.id)}/patch`;link.download=`${state.run.task_id||'patchforge'}.patch`;document.body.append(link);link.click();link.remove();});
+    $('source-original').addEventListener('click',()=>{state.sourceOriginal=true;renderSource();});$('source-current').addEventListener('click',()=>{state.sourceOriginal=false;renderSource();});
+    $('bundle-button').addEventListener('click',async()=>{const run=state.run;if(!run?.workspace_sha256)return;$('bundle-button').disabled=true;try{const response=await fetch(`/api/runs/${encodeURIComponent(run.id)}/bundle`);if(!response.ok)throw new Error(response.status===404?'当前服务版本不支持复现包':`请求失败 (${response.status})`);const blob=await response.blob();const url=URL.createObjectURL(blob);const link=el('a');link.href=url;link.download=`patchforge-${run.id}.zip`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);notice('复现包已下载。');}catch(error){notice(`复现包下载失败：${error.message}`,true);}finally{renderControls();}});
+    document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();startRun();}});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&activeStates.has(state.run?.status)){clearTimeout(state.pollTimer);poll();}});
+    window.addEventListener('beforeunload',()=>clearTimeout(state.pollTimer));
+    renderRun();renderEvaluation();boot();
+  </script>
+</body>
+</html>

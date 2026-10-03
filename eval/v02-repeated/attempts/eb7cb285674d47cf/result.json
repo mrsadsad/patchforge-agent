@@ -1,0 +1,324 @@
+{
+  "id": "eb7cb285674d47cf",
+  "task_id": "ttl-boundary",
+  "title": "修复缓存过期边界",
+  "mode": "live",
+  "strategy": "repair",
+  "status": "completed",
+  "phase": "done",
+  "created_at": "2026-10-02T18:01:53.890044+00:00",
+  "updated_at": "2026-10-02T18:02:01.961949+00:00",
+  "steps": 3,
+  "max_steps": 10,
+  "tool_calls": 3,
+  "tokens": 7590,
+  "usage_complete": true,
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-10-02T18:01:53.984270+00:00",
+      "kind": "started",
+      "title": "创建独立工作副本",
+      "data": {
+        "mode": "live",
+        "strategy": "repair",
+        "task_sha256": "bf7b1ebce60954ce88d0c5fa76d77b2a98c71788fd0306c86aa69cdd4ba32ccf",
+        "editable": [
+          "solution.py"
+        ]
+      }
+    },
+    {
+      "seq": 2,
+      "time": "2026-10-02T18:01:54.044618+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 3,
+      "time": "2026-10-02T18:01:54.955908+00:00",
+      "kind": "test_result",
+      "title": "可见测试未通过",
+      "data": {
+        "total": 3,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": false,
+        "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... FAIL\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n======================================================================\nFAIL: test_exact_deadline (test_visible.VisibleTests.test_exact_deadline)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_exact_deadline\n    self.assertEqual(cache.get(\"token\", \"missing\"), \"missing\")\nAssertionError: 'abc' != 'missing'\n- abc\n+ missing\n\n\n----------------------------------------------------------------------\nRan 3 tests in 0.003s\n\nFAILED (failures=1)\n",
+        "elapsed_ms": 844,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "044e120fe716af28fb29cd6c89f144877ff4a8431cee42b5ee6969456071dc2b"
+      }
+    },
+    {
+      "seq": 4,
+      "time": "2026-10-02T18:01:55.032871+00:00",
+      "kind": "context_prepared",
+      "title": "构建有界源码上下文",
+      "data": {
+        "chars": 5750,
+        "omitted_files": []
+      }
+    },
+    {
+      "seq": 5,
+      "time": "2026-10-02T18:01:55.178620+00:00",
+      "kind": "model_request",
+      "title": "第 1 次模型请求",
+      "data": {
+        "remaining": 9
+      }
+    },
+    {
+      "seq": 6,
+      "time": "2026-10-02T18:01:56.205087+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 2349,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 7,
+      "time": "2026-10-02T18:01:56.285786+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · replace_text",
+      "data": {
+        "arguments": "{\"path\": \"solution.py\", \"old\": \"        if self._clock() > expires:\", \"new\": \"        if self._clock() >= expires:\"}"
+      }
+    },
+    {
+      "seq": 8,
+      "time": "2026-10-02T18:01:56.386347+00:00",
+      "kind": "tool_result",
+      "title": "replace_text 完成",
+      "data": {
+        "ok": true,
+        "paths": [
+          "solution.py"
+        ],
+        "workspace_sha256": "edbfbff5416609192ae6fbba3303dbfe3000f014b798d8f59b835f9ad7f14065",
+        "message": "All edits applied. Earlier test results are stale; rerun tests.",
+        "path": "solution.py"
+      }
+    },
+    {
+      "seq": 9,
+      "time": "2026-10-02T18:01:56.468415+00:00",
+      "kind": "model_request",
+      "title": "第 2 次模型请求",
+      "data": {
+        "remaining": 8
+      }
+    },
+    {
+      "seq": 10,
+      "time": "2026-10-02T18:01:57.060901+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 2465,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 11,
+      "time": "2026-10-02T18:01:57.126268+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · run_tests",
+      "data": {
+        "arguments": "{}"
+      }
+    },
+    {
+      "seq": 12,
+      "time": "2026-10-02T18:01:57.172351+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 13,
+      "time": "2026-10-02T18:01:58.074664+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... ok\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 844,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "edbfbff5416609192ae6fbba3303dbfe3000f014b798d8f59b835f9ad7f14065"
+      }
+    },
+    {
+      "seq": 14,
+      "time": "2026-10-02T18:01:58.119597+00:00",
+      "kind": "tool_result",
+      "title": "run_tests 完成",
+      "data": {
+        "ok": true,
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... ok\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 844,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "edbfbff5416609192ae6fbba3303dbfe3000f014b798d8f59b835f9ad7f14065"
+      }
+    },
+    {
+      "seq": 15,
+      "time": "2026-10-02T18:01:58.180594+00:00",
+      "kind": "model_request",
+      "title": "第 3 次模型请求",
+      "data": {
+        "remaining": 7
+      }
+    },
+    {
+      "seq": 16,
+      "time": "2026-10-02T18:01:59.641526+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 2776,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 17,
+      "time": "2026-10-02T18:01:59.708467+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · finish",
+      "data": {
+        "arguments": "{\"summary\": \"Changed the expiry check in TTLCache.get from `>` to `>=` so entries are removed and default returned at or after the deadline (zero TTL expires immediately). All visible tests pass.\"}"
+      }
+    },
+    {
+      "seq": 18,
+      "time": "2026-10-02T18:01:59.760963+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 19,
+      "time": "2026-10-02T18:02:00.673057+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... ok\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 859,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "edbfbff5416609192ae6fbba3303dbfe3000f014b798d8f59b835f9ad7f14065"
+      }
+    },
+    {
+      "seq": 20,
+      "time": "2026-10-02T18:02:00.722348+00:00",
+      "kind": "test_started",
+      "title": "执行提交后保留测试",
+      "data": {}
+    },
+    {
+      "seq": 21,
+      "time": "2026-10-02T18:02:01.775375+00:00",
+      "kind": "test_result",
+      "title": "保留测试通过",
+      "data": {
+        "total": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_false_values_and_independent_keys (test_hidden.HiddenTests.test_false_values_and_independent_keys) ... ok\ntest_negative_ttl (test_hidden.HiddenTests.test_negative_ttl) ... ok\ntest_overwrite_renews_deadline (test_hidden.HiddenTests.test_overwrite_renews_deadline) ... ok\ntest_zero_ttl (test_hidden.HiddenTests.test_zero_ttl) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 984,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "edbfbff5416609192ae6fbba3303dbfe3000f014b798d8f59b835f9ad7f14065"
+      }
+    },
+    {
+      "seq": 22,
+      "time": "2026-10-02T18:02:01.837310+00:00",
+      "kind": "completed",
+      "title": "补丁通过两层测试，可供审阅",
+      "data": {}
+    },
+    {
+      "seq": 23,
+      "time": "2026-10-02T18:02:01.896990+00:00",
+      "kind": "tool_result",
+      "title": "finish 完成",
+      "data": {
+        "ok": true,
+        "submitted": true
+      }
+    }
+  ],
+  "diff": "--- a/solution.py\n+++ b/solution.py\n@@ -13,7 +13,7 @@\n         if key not in self._items:\n             return default\n         value, expires = self._items[key]\n-        if self._clock() > expires:\n+        if self._clock() >= expires:\n             del self._items[key]\n             return default\n         return value\n",
+  "visible": {
+    "total": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... ok\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 859,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "edbfbff5416609192ae6fbba3303dbfe3000f014b798d8f59b835f9ad7f14065"
+  },
+  "hidden": {
+    "total": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_false_values_and_independent_keys (test_hidden.HiddenTests.test_false_values_and_independent_keys) ... ok\ntest_negative_ttl (test_hidden.HiddenTests.test_negative_ttl) ... ok\ntest_overwrite_renews_deadline (test_hidden.HiddenTests.test_overwrite_renews_deadline) ... ok\ntest_zero_ttl (test_hidden.HiddenTests.test_zero_ttl) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 984,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "edbfbff5416609192ae6fbba3303dbfe3000f014b798d8f59b835f9ad7f14065"
+  },
+  "baseline": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... FAIL\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n======================================================================\nFAIL: test_exact_deadline (test_visible.VisibleTests.test_exact_deadline)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_exact_deadline\n    self.assertEqual(cache.get(\"token\", \"missing\"), \"missing\")\nAssertionError: 'abc' != 'missing'\n- abc\n+ missing\n\n\n----------------------------------------------------------------------\nRan 3 tests in 0.003s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 844,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "044e120fe716af28fb29cd6c89f144877ff4a8431cee42b5ee6969456071dc2b"
+  },
+  "summary": "Changed the expiry check in TTLCache.get from `>` to `>=` so entries are removed and default returned at or after the deadline (zero TTL expires immediately). All visible tests pass.",
+  "error": null,
+  "files_changed": 1,
+  "cancel_requested": false,
+  "model": "deepseek-flash",
+  "task_sha256": "bf7b1ebce60954ce88d0c5fa76d77b2a98c71788fd0306c86aa69cdd4ba32ccf",
+  "elapsed_ms": 8000,
+  "source_sha256": "3c8753dd144d619ddc2fc81c0900b4331ac86f3f173d9a5e5a69c4f55099b8d7",
+  "workspace_sha256": "edbfbff5416609192ae6fbba3303dbfe3000f014b798d8f59b835f9ad7f14065",
+  "checkpoints": [],
+  "context_stats": {
+    "before_chars": 7318,
+    "after_chars": 7318,
+    "compacted_groups": 0,
+    "over_limit": false,
+    "initial_chars": 5750
+  },
+  "protocol_errors": 0
+}

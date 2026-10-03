@@ -1,0 +1,23 @@
+{
+  "id": "ttl-boundary",
+  "title": "修复缓存过期边界",
+  "category": "State and time",
+  "difficulty": "medium",
+  "split": "development",
+  "issue": "Synthetic development fixture, hand-authored for PatchForge; not an external benchmark.\n\nRepair TTLCache(ttl, clock), where clock is an injected callable returning monotonic seconds. set(key, value) stores an entry until the current clock time plus ttl. get(key, default=None) returns the stored value strictly before its deadline; at or after the deadline it must remove the entry and return default. A zero TTL expires immediately. Overwriting a key starts a fresh TTL. Values such as None, 0 and False are valid cached values. Reject negative TTL at construction. No sleeping or real clock is needed. Currently an entry can be read at its exact expiration time.",
+  "files": {
+    "solution.py": "class TTLCache:\n    def __init__(self, ttl, clock):\n        if ttl < 0:\n            raise ValueError(\"ttl must be nonnegative\")\n        self.ttl = ttl\n        self._clock = clock\n        self._items = {}\n\n    def set(self, key, value):\n        self._items[key] = (value, self._clock() + self.ttl)\n\n    def get(self, key, default=None):\n        if key not in self._items:\n            return default\n        value, expires = self._items[key]\n        if self._clock() > expires:\n            del self._items[key]\n            return default\n        return value\n",
+    "test_visible.py": "import unittest\nfrom solution import TTLCache\n\nclass VisibleTests(unittest.TestCase):\n    def test_exact_deadline(self):\n        now = [10]\n        cache = TTLCache(5, lambda: now[0])\n        cache.set(\"token\", \"abc\")\n        now[0] = 15\n        self.assertEqual(cache.get(\"token\", \"missing\"), \"missing\")\n\n    def test_before_deadline(self):\n        now = [10]\n        cache = TTLCache(5, lambda: now[0])\n        cache.set(\"token\", \"abc\")\n        now[0] = 14.999\n        self.assertEqual(cache.get(\"token\"), \"abc\")\n\n    def test_missing_default(self):\n        cache = TTLCache(5, lambda: 0)\n        self.assertIsNone(cache.get(\"absent\"))\n        self.assertEqual(cache.get(\"absent\", 42), 42)\n"
+  },
+  "editable": [
+    "solution.py"
+  ],
+  "hidden_tests": "import unittest\nfrom solution import TTLCache\n\nclass HiddenTests(unittest.TestCase):\n    def test_zero_ttl(self):\n        cache = TTLCache(0, lambda: 2)\n        cache.set(\"key\", 99)\n        self.assertEqual(cache.get(\"key\", \"expired\"), \"expired\")\n\n    def test_overwrite_renews_deadline(self):\n        now = [0]\n        cache = TTLCache(5, lambda: now[0])\n        cache.set(\"key\", \"old\")\n        now[0] = 4\n        cache.set(\"key\", \"new\")\n        now[0] = 5\n        self.assertEqual(cache.get(\"key\"), \"new\")\n        now[0] = 9\n        self.assertIsNone(cache.get(\"key\"))\n\n    def test_false_values_and_independent_keys(self):\n        now = [0]\n        cache = TTLCache(2, lambda: now[0])\n        for key, value in ((\"none\", None), (\"zero\", 0), (\"false\", False)):\n            cache.set(key, value)\n            self.assertIs(cache.get(key, \"missing\"), value)\n        now[0] = 3\n        self.assertEqual(cache.get(\"zero\", \"expired\"), \"expired\")\n        cache.set(\"new\", 7)\n        self.assertEqual(cache.get(\"new\"), 7)\n\n    def test_negative_ttl(self):\n        with self.assertRaises(ValueError):\n            TTLCache(-1, lambda: 0)\n",
+  "demo_edits": [
+    {
+      "path": "solution.py",
+      "old": "if self._clock() > expires:",
+      "new": "if self._clock() >= expires:"
+    }
+  ]
+}

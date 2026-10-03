@@ -1,0 +1,17 @@
+--- a/cachetools/__init__.py
++++ b/cachetools/__init__.py
+@@ -631,7 +631,13 @@
+         with self.timer as time:
+             expires = self.__ttu(key, value, time)
+             if not (time < expires):
+-                return  # skip expired items
++                # remove any previous item for this key, but do not store
++                # the expired replacement
++                try:
++                    del self[key]
++                except KeyError:
++                    pass
++                return
+             self.expire(time)
+             cache_setitem(self, key, value)
+         # removing an existing item would break the heap structure, so

@@ -1,0 +1,64 @@
+--- a/cachetools/__init__.py
++++ b/cachetools/__init__.py
+@@ -18,6 +18,7 @@
+ import collections.abc
+ import functools
+ import heapq
++import itertools
+ import random
+ import time
+ 
+@@ -57,6 +58,7 @@
+         self.__data = {}
+         self.__currsize = 0
+         self.__maxsize = maxsize
++        self.__counter = itertools.count()
+ 
+     def __repr__(self):
+         return "%s(%s, maxsize=%r, currsize=%r)" % (
+@@ -66,6 +68,15 @@
+             self.__currsize,
+         )
+ 
++    def __getstate__(self):
++        state = self.__dict__.copy()
++        state.pop("_Cache__counter", None)
++        return state
++
++    def __setstate__(self, state):
++        self.__dict__.update(state)
++        self.__counter = itertools.count()
++
+     def __getitem__(self, key):
+         try:
+             return self.__data[key]
+@@ -79,13 +90,23 @@
+             raise ValueError("value size must be non-negative")
+         if size > maxsize:
+             raise ValueError("value too large")
+-        if key not in self.__data or self.__size[key] < size:
+-            while self.__currsize + size > maxsize:
++        if key in self.__data:
++            # The current size already accounts for the old value, so
++            # only the difference between the new and the old size has
++            # to be accommodated by evicting other items.
++            diffsize = size - self.__size[key]
++            if diffsize > 0:
++                while self.__currsize + diffsize > maxsize:
++                    self.popitem()
++                    if key not in self.__data:
++                        # the key being replaced has been evicted, so its
++                        # old size is no longer part of the current size
++                        diffsize = size
++                        break
++        else:
++            diffsize = size
++            while self.__currsize + diffsize > maxsize:
+                 self.popitem()
+-        if key in self.__data:
+-            diffsize = size - self.__size[key]
+-        else:
+-            diffsize = size
+         self.__data[key] = value
+         self.__size[key] = size
+         self.__currsize += diffsize

@@ -1,0 +1,146 @@
+{
+  "id": "7cddc4a007894feb",
+  "task_id": "upstream-cachetools-expired-overwrite",
+  "title": "真实缺陷 · TLRU 过期覆盖保留旧值",
+  "mode": "live",
+  "strategy": "direct",
+  "status": "failed",
+  "phase": "done",
+  "created_at": "2026-10-02T18:00:31.156881+00:00",
+  "updated_at": "2026-10-02T18:00:33.686400+00:00",
+  "steps": 1,
+  "max_steps": 1,
+  "tool_calls": 1,
+  "tokens": 7016,
+  "usage_complete": true,
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-10-02T18:00:31.201673+00:00",
+      "kind": "started",
+      "title": "创建独立工作副本",
+      "data": {
+        "mode": "live",
+        "strategy": "direct",
+        "task_sha256": "4de3cb790d60449c18c257860386e7d0e996cea138d165b6499a799db49b46b4",
+        "editable": [
+          "cachetools/__init__.py"
+        ]
+      }
+    },
+    {
+      "seq": 2,
+      "time": "2026-10-02T18:00:31.226075+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 3,
+      "time": "2026-10-02T18:00:32.121835+00:00",
+      "kind": "test_result",
+      "title": "可见测试未通过",
+      "data": {
+        "total": 3,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": false,
+        "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... FAIL\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n======================================================================\nFAIL: test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 9, in test_dead_on_arrival_replacement_removes_previous_value\n    self.assertNotIn(\"account\", cache)\nAssertionError: 'account' unexpectedly found in TLRUCache({'account': 9}, maxsize=3, currsize=1)\n\n----------------------------------------------------------------------\nRan 3 tests in 0.005s\n\nFAILED (failures=1)\n",
+        "elapsed_ms": 828,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "35118e54313c9eccf08bac3992449b27c08c693031dfb86bea076212807d363f"
+      }
+    },
+    {
+      "seq": 4,
+      "time": "2026-10-02T18:00:32.184334+00:00",
+      "kind": "context_prepared",
+      "title": "构建有界源码上下文",
+      "data": {
+        "chars": 24113,
+        "omitted_files": []
+      }
+    },
+    {
+      "seq": 5,
+      "time": "2026-10-02T18:00:32.247801+00:00",
+      "kind": "model_request",
+      "title": "第 1 次模型请求",
+      "data": {
+        "remaining": 0
+      }
+    },
+    {
+      "seq": 6,
+      "time": "2026-10-02T18:00:33.566251+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 7016,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 7,
+      "time": "2026-10-02T18:00:33.606624+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · submit_patch",
+      "data": {
+        "arguments": "{\"edits\": [{\"path\": \"cachetools/__init__.py\", \"old\": \"    def __setitem__(self, key, value, now=None):\\n        if now is None:\\n            now = self.__timer()\\n        try:\\n            if self.__ttu(key, value, now) < now:\\n                # expired\\n                del self[key]\\n            else:\\n                self.__update(key, value, now)\\n        except KeyError:\\n            pass\", \"new\": \"    def __setitem__(self, key, value, now=None):\\n        if now is None:\\n            now = self.__timer()\\n        if self.__ttu(key, value, now) < now:\\n            # expired\\n            try:\\n                del self[key]\\n            except KeyError:\\n                pass\\n        else:\\n            self.__update(key, value, now)\"}], \"summary\": \"Fix TLRUCache.__setitem__ so an expired replacement removes any prior entry for the key (and is a no-op for absent keys), instead of leaving the previous value in place.\"}"
+      }
+    },
+    {
+      "seq": 8,
+      "time": "2026-10-02T18:00:33.642556+00:00",
+      "kind": "tool_result",
+      "title": "submit_patch 失败",
+      "data": {
+        "ok": false,
+        "error": "exact_match_count_0_expected_1"
+      }
+    }
+  ],
+  "diff": "",
+  "visible": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... FAIL\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n======================================================================\nFAIL: test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 9, in test_dead_on_arrival_replacement_removes_previous_value\n    self.assertNotIn(\"account\", cache)\nAssertionError: 'account' unexpectedly found in TLRUCache({'account': 9}, maxsize=3, currsize=1)\n\n----------------------------------------------------------------------\nRan 3 tests in 0.005s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 828,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "35118e54313c9eccf08bac3992449b27c08c693031dfb86bea076212807d363f"
+  },
+  "hidden": null,
+  "baseline": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... FAIL\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n======================================================================\nFAIL: test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 9, in test_dead_on_arrival_replacement_removes_previous_value\n    self.assertNotIn(\"account\", cache)\nAssertionError: 'account' unexpectedly found in TLRUCache({'account': 9}, maxsize=3, currsize=1)\n\n----------------------------------------------------------------------\nRan 3 tests in 0.005s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 828,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "35118e54313c9eccf08bac3992449b27c08c693031dfb86bea076212807d363f"
+  },
+  "summary": "",
+  "error": "exact_match_count_0_expected_1",
+  "files_changed": 0,
+  "cancel_requested": false,
+  "model": "deepseek-flash",
+  "task_sha256": "4de3cb790d60449c18c257860386e7d0e996cea138d165b6499a799db49b46b4",
+  "elapsed_ms": 2500,
+  "source_sha256": "3c8753dd144d619ddc2fc81c0900b4331ac86f3f173d9a5e5a69c4f55099b8d7",
+  "workspace_sha256": "35118e54313c9eccf08bac3992449b27c08c693031dfb86bea076212807d363f",
+  "checkpoints": [],
+  "context_stats": {
+    "before_chars": 24113,
+    "after_chars": 24113,
+    "compacted_groups": 0,
+    "over_limit": false,
+    "initial_chars": 24113
+  },
+  "protocol_errors": 0
+}

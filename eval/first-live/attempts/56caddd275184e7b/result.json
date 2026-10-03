@@ -1,0 +1,282 @@
+{
+  "id": "56caddd275184e7b",
+  "task_id": "dependency-order",
+  "title": "修复依赖调度的稳定顺序",
+  "mode": "live",
+  "strategy": "repair",
+  "status": "completed",
+  "phase": "done",
+  "created_at": "2026-10-02T17:35:52.421242+00:00",
+  "updated_at": "2026-10-02T17:35:59.891150+00:00",
+  "steps": 4,
+  "max_steps": 8,
+  "tool_calls": 4,
+  "tokens": 8050,
+  "usage_complete": true,
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-10-02T17:35:52.451298+00:00",
+      "kind": "started",
+      "title": "创建独立工作副本",
+      "data": {
+        "mode": "live",
+        "strategy": "repair",
+        "task_sha256": "b873889d5ea052cd4cbbcb0ba96b5559a7c62df239359efd2c5a894dc53955f1",
+        "editable": [
+          "solution.py"
+        ]
+      }
+    },
+    {
+      "seq": 2,
+      "time": "2026-10-02T17:35:52.476630+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 3,
+      "time": "2026-10-02T17:35:53.405432+00:00",
+      "kind": "test_result",
+      "title": "可见测试未通过",
+      "data": {
+        "total": 3,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": false,
+        "output": "test_chain (test_visible.VisibleTests.test_chain) ... ok\ntest_cycle (test_visible.VisibleTests.test_cycle) ... ok\ntest_newly_ready_task_reorders_queue (test_visible.VisibleTests.test_newly_ready_task_reorders_queue) ... FAIL\n\n======================================================================\nFAIL: test_newly_ready_task_reorders_queue (test_visible.VisibleTests.test_newly_ready_task_reorders_queue)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 6, in test_newly_ready_task_reorders_queue\n    self.assertEqual(dependency_order({\"a\": [], \"b\": [\"a\"], \"z\": []}), [\"a\", \"b\", \"z\"])\nAssertionError: Lists differ: ['a', 'z', 'b'] != ['a', 'b', 'z']\n\nFirst differing element 1:\n'z'\n'b'\n\n- ['a', 'z', 'b']\n+ ['a', 'b', 'z']\n\n----------------------------------------------------------------------\nRan 3 tests in 0.013s\n\nFAILED (failures=1)\n",
+        "elapsed_ms": 906,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 4,
+      "time": "2026-10-02T17:35:53.458844+00:00",
+      "kind": "model_request",
+      "title": "第 1 次模型请求",
+      "data": {
+        "remaining": 7
+      }
+    },
+    {
+      "seq": 5,
+      "time": "2026-10-02T17:35:54.136836+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · read_file",
+      "data": {}
+    },
+    {
+      "seq": 6,
+      "time": "2026-10-02T17:35:54.168720+00:00",
+      "kind": "tool_result",
+      "title": "read_file 完成",
+      "data": {
+        "ok": true,
+        "content": "def dependency_order(graph):\n    nodes = set(graph)\n    for dependencies in graph.values():\n        nodes.update(dependencies)\n    dependents = {node: set() for node in nodes}\n    pending = {node: 0 for node in nodes}\n    for node, dependencies in graph.items():\n        unique = set(dependencies)\n        pending[node] = len(unique)\n        for prerequisite in unique:\n            dependents[prerequisite].add(node)\n    available = sorted(node for node in nodes if pending[node] == 0)\n    result = []\n    while available:\n        node = available.pop(0)\n        result.append(node)\n        for dependent in sorted(dependents[node]):\n            pending[dependent] -= 1\n            if pending[dependent] == 0:\n                available.append(dependent)\n    if len(result) != len(nodes):\n        raise ValueError(\"dependency cycle\")\n    return result\n"
+      }
+    },
+    {
+      "seq": 7,
+      "time": "2026-10-02T17:35:54.193008+00:00",
+      "kind": "model_request",
+      "title": "第 2 次模型请求",
+      "data": {
+        "remaining": 6
+      }
+    },
+    {
+      "seq": 8,
+      "time": "2026-10-02T17:35:55.386905+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · replace_text",
+      "data": {}
+    },
+    {
+      "seq": 9,
+      "time": "2026-10-02T17:35:55.426565+00:00",
+      "kind": "tool_result",
+      "title": "replace_text 完成",
+      "data": {
+        "ok": true,
+        "path": "solution.py",
+        "message": "Replacement applied. Tests must be rerun."
+      }
+    },
+    {
+      "seq": 10,
+      "time": "2026-10-02T17:35:55.451022+00:00",
+      "kind": "model_request",
+      "title": "第 3 次模型请求",
+      "data": {
+        "remaining": 5
+      }
+    },
+    {
+      "seq": 11,
+      "time": "2026-10-02T17:35:56.116143+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · run_tests",
+      "data": {}
+    },
+    {
+      "seq": 12,
+      "time": "2026-10-02T17:35:56.141880+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 13,
+      "time": "2026-10-02T17:35:56.988797+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_chain (test_visible.VisibleTests.test_chain) ... ok\ntest_cycle (test_visible.VisibleTests.test_cycle) ... ok\ntest_newly_ready_task_reorders_queue (test_visible.VisibleTests.test_newly_ready_task_reorders_queue) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 813,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 14,
+      "time": "2026-10-02T17:35:57.016771+00:00",
+      "kind": "tool_result",
+      "title": "run_tests 完成",
+      "data": {
+        "ok": true,
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_chain (test_visible.VisibleTests.test_chain) ... ok\ntest_cycle (test_visible.VisibleTests.test_cycle) ... ok\ntest_newly_ready_task_reorders_queue (test_visible.VisibleTests.test_newly_ready_task_reorders_queue) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 813,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 15,
+      "time": "2026-10-02T17:35:57.042360+00:00",
+      "kind": "model_request",
+      "title": "第 4 次模型请求",
+      "data": {
+        "remaining": 4
+      }
+    },
+    {
+      "seq": 16,
+      "time": "2026-10-02T17:35:58.059860+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · finish",
+      "data": {}
+    },
+    {
+      "seq": 17,
+      "time": "2026-10-02T17:35:58.085203+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 18,
+      "time": "2026-10-02T17:35:58.937339+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_chain (test_visible.VisibleTests.test_chain) ... ok\ntest_cycle (test_visible.VisibleTests.test_cycle) ... ok\ntest_newly_ready_task_reorders_queue (test_visible.VisibleTests.test_newly_ready_task_reorders_queue) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 812,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 19,
+      "time": "2026-10-02T17:35:58.964018+00:00",
+      "kind": "test_started",
+      "title": "执行提交后保留测试",
+      "data": {}
+    },
+    {
+      "seq": 20,
+      "time": "2026-10-02T17:35:59.810097+00:00",
+      "kind": "test_result",
+      "title": "保留测试通过",
+      "data": {
+        "total": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_diamond_and_multiple_ready_steps (test_hidden.HiddenTests.test_diamond_and_multiple_ready_steps) ... ok\ntest_disconnected_cycle_and_self_cycle (test_hidden.HiddenTests.test_disconnected_cycle_and_self_cycle) ... ok\ntest_empty_and_no_mutation (test_hidden.HiddenTests.test_empty_and_no_mutation) ... ok\ntest_reference_only_and_duplicate_dependencies (test_hidden.HiddenTests.test_reference_only_and_duplicate_dependencies) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 828,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 21,
+      "time": "2026-10-02T17:35:59.835301+00:00",
+      "kind": "completed",
+      "title": "补丁通过两层测试，可供审阅",
+      "data": {}
+    },
+    {
+      "seq": 22,
+      "time": "2026-10-02T17:35:59.864201+00:00",
+      "kind": "tool_result",
+      "title": "finish 完成",
+      "data": {
+        "ok": true,
+        "submitted": true
+      }
+    }
+  ],
+  "diff": "--- a/solution.py\n+++ b/solution.py\n@@ -18,6 +18,7 @@\n             pending[dependent] -= 1\n             if pending[dependent] == 0:\n                 available.append(dependent)\n+        available.sort()\n     if len(result) != len(nodes):\n         raise ValueError(\"dependency cycle\")\n     return result\n",
+  "visible": {
+    "total": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_chain (test_visible.VisibleTests.test_chain) ... ok\ntest_cycle (test_visible.VisibleTests.test_cycle) ... ok\ntest_newly_ready_task_reorders_queue (test_visible.VisibleTests.test_newly_ready_task_reorders_queue) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 812,
+    "image": "python:3.12-slim"
+  },
+  "hidden": {
+    "total": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_diamond_and_multiple_ready_steps (test_hidden.HiddenTests.test_diamond_and_multiple_ready_steps) ... ok\ntest_disconnected_cycle_and_self_cycle (test_hidden.HiddenTests.test_disconnected_cycle_and_self_cycle) ... ok\ntest_empty_and_no_mutation (test_hidden.HiddenTests.test_empty_and_no_mutation) ... ok\ntest_reference_only_and_duplicate_dependencies (test_hidden.HiddenTests.test_reference_only_and_duplicate_dependencies) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 828,
+    "image": "python:3.12-slim"
+  },
+  "baseline": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_chain (test_visible.VisibleTests.test_chain) ... ok\ntest_cycle (test_visible.VisibleTests.test_cycle) ... ok\ntest_newly_ready_task_reorders_queue (test_visible.VisibleTests.test_newly_ready_task_reorders_queue) ... FAIL\n\n======================================================================\nFAIL: test_newly_ready_task_reorders_queue (test_visible.VisibleTests.test_newly_ready_task_reorders_queue)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 6, in test_newly_ready_task_reorders_queue\n    self.assertEqual(dependency_order({\"a\": [], \"b\": [\"a\"], \"z\": []}), [\"a\", \"b\", \"z\"])\nAssertionError: Lists differ: ['a', 'z', 'b'] != ['a', 'b', 'z']\n\nFirst differing element 1:\n'z'\n'b'\n\n- ['a', 'z', 'b']\n+ ['a', 'b', 'z']\n\n----------------------------------------------------------------------\nRan 3 tests in 0.013s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 906,
+    "image": "python:3.12-slim"
+  },
+  "summary": "Fixed dependency_order to re-sort the ready set after each completion, so the lexicographically smallest ready task is always chosen (previously a FIFO queue let a larger task run before a newly-ready smaller one). Cycle detection, deduplication of prerequisites, non-mutation, and prerequisite-only node inclusion are unchanged.",
+  "error": null,
+  "files_changed": 1,
+  "cancel_requested": false,
+  "model": "deepseek-flash",
+  "task_sha256": "b873889d5ea052cd4cbbcb0ba96b5559a7c62df239359efd2c5a894dc53955f1",
+  "elapsed_ms": 7438,
+  "source_sha256": "864f28a217c118be6079b36434262f2d11813dfc507de6cbb945deea8248c12a"
+}

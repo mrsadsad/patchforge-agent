@@ -1,0 +1,23 @@
+--- a/solution.py
++++ b/solution.py
+@@ -3,8 +3,16 @@
+ 
+ 
+ def parse_records(text):
+-    lines = [line for line in text.splitlines() if line]
+-    if not lines:
++    if not text:
+         return []
+-    headers = lines[0].split(",")
+-    return [dict(zip(headers, line.split(","))) for line in lines[1:]]
++    reader = csv.reader(io.StringIO(text, newline=""))
++    rows = list(reader)
++    if not rows:
++        return []
++    headers = rows[0]
++    records = []
++    for row in rows[1:]:
++        if not row or all(cell == "" for cell in row):
++            continue
++        records.append(dict(zip(headers, row)))
++    return records

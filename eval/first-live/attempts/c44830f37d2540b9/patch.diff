@@ -1,0 +1,11 @@
+--- a/solution.py
++++ b/solution.py
+@@ -10,7 +10,7 @@
+         parsed = datetime.fromisoformat(event.replace("Z", "+00:00"))
+         if parsed.tzinfo is None:
+             raise ValueError("timestamp must include timezone")
+-        local = parsed.replace(tzinfo=target)
++        local = parsed.astimezone(target)
+         day = local.date().isoformat()
+         counts[day] = counts.get(day, 0) + 1
+     return dict(sorted(counts.items()))

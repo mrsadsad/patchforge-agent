@@ -1,0 +1,8 @@
+--- a/solution.py
++++ b/solution.py
+@@ -1,4 +1,4 @@
+ def retry_delays(attempts, base=0.5, cap=8.0):
+     if attempts < 1 or base < 0 or cap < 0:
+         raise ValueError("invalid retry policy")
+-    return [min(cap, base * 2 ** (retry + 1)) for retry in range(attempts)]
++    return [min(cap, base * 2 ** retry) for retry in range(attempts - 1)]

@@ -1,0 +1,23 @@
+{
+  "id": "pagination-offset",
+  "title": "修复分页首屏偏移",
+  "category": "API correctness",
+  "difficulty": "easy",
+  "split": "development",
+  "issue": "Synthetic development fixture, hand-authored for PatchForge; not an external benchmark.\n\nRepair paginate(items, page, page_size). Page numbers are one-based. Return a dictionary with items (a list), total (the original item count), and has_next (whether any items exist after this page). A page beyond the end returns an empty list and has_next=False. Raise ValueError for page < 1 or page_size < 1. Do not mutate input items. Inputs use integer page/page_size. The reported bug is that page 1 silently skips the first page.",
+  "files": {
+    "solution.py": "def paginate(items, page, page_size):\n    if page < 1 or page_size < 1:\n        raise ValueError(\"page and page_size must be positive\")\n    start = page * page_size\n    end = start + page_size\n    return {\"items\": list(items[start:end]), \"total\": len(items), \"has_next\": end < len(items)}\n",
+    "test_visible.py": "import unittest\nfrom solution import paginate\n\nclass VisibleTests(unittest.TestCase):\n    def test_first_page(self):\n        self.assertEqual(paginate([10, 20, 30, 40, 50], 1, 2), {\"items\": [10, 20], \"total\": 5, \"has_next\": True})\n\n    def test_second_page(self):\n        self.assertEqual(paginate([10, 20, 30, 40, 50], 2, 2)[\"items\"], [30, 40])\n\n    def test_invalid_page(self):\n        with self.assertRaises(ValueError):\n            paginate([1], 0, 1)\n"
+  },
+  "editable": [
+    "solution.py"
+  ],
+  "hidden_tests": "import unittest\nfrom solution import paginate\n\nclass HiddenTests(unittest.TestCase):\n    def test_last_partial_page(self):\n        self.assertEqual(paginate(range(5), 3, 2), {\"items\": [4], \"total\": 5, \"has_next\": False})\n\n    def test_exact_last_page(self):\n        self.assertEqual(paginate([1, 2, 3, 4], 2, 2), {\"items\": [3, 4], \"total\": 4, \"has_next\": False})\n\n    def test_empty_and_out_of_range(self):\n        self.assertEqual(paginate([], 1, 3), {\"items\": [], \"total\": 0, \"has_next\": False})\n        self.assertEqual(paginate([1], 7, 3), {\"items\": [], \"total\": 1, \"has_next\": False})\n\n    def test_input_unchanged_and_invalid_size(self):\n        items = [1, 2, 3]\n        page = paginate(items, 1, 1)\n        page[\"items\"].append(99)\n        self.assertEqual(items, [1, 2, 3])\n        with self.assertRaises(ValueError):\n            paginate(items, 1, 0)\n",
+  "demo_edits": [
+    {
+      "path": "solution.py",
+      "old": "start = page * page_size",
+      "new": "start = (page - 1) * page_size"
+    }
+  ]
+}

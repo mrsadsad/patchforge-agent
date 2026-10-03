@@ -1,0 +1,111 @@
+{
+  "id": "a336e0df2dac4ecd",
+  "task_id": "ttl-boundary",
+  "title": "修复缓存过期边界",
+  "mode": "live",
+  "strategy": "direct",
+  "status": "failed",
+  "phase": "done",
+  "created_at": "2026-10-02T17:35:43.470202+00:00",
+  "updated_at": "2026-10-02T17:35:45.597823+00:00",
+  "steps": 1,
+  "max_steps": 1,
+  "tool_calls": 1,
+  "tokens": 1449,
+  "usage_complete": true,
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-10-02T17:35:43.500596+00:00",
+      "kind": "started",
+      "title": "创建独立工作副本",
+      "data": {
+        "mode": "live",
+        "strategy": "direct",
+        "task_sha256": "bf7b1ebce60954ce88d0c5fa76d77b2a98c71788fd0306c86aa69cdd4ba32ccf",
+        "editable": [
+          "solution.py"
+        ]
+      }
+    },
+    {
+      "seq": 2,
+      "time": "2026-10-02T17:35:43.526923+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 3,
+      "time": "2026-10-02T17:35:44.368550+00:00",
+      "kind": "test_result",
+      "title": "可见测试未通过",
+      "data": {
+        "total": 3,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": false,
+        "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... FAIL\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n======================================================================\nFAIL: test_exact_deadline (test_visible.VisibleTests.test_exact_deadline)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_exact_deadline\n    self.assertEqual(cache.get(\"token\", \"missing\"), \"missing\")\nAssertionError: 'abc' != 'missing'\n- abc\n+ missing\n\n\n----------------------------------------------------------------------\nRan 3 tests in 0.006s\n\nFAILED (failures=1)\n",
+        "elapsed_ms": 828,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 4,
+      "time": "2026-10-02T17:35:44.427703+00:00",
+      "kind": "model_request",
+      "title": "第 1 次模型请求",
+      "data": {
+        "remaining": 0
+      }
+    },
+    {
+      "seq": 5,
+      "time": "2026-10-02T17:35:45.524772+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · submit_patch",
+      "data": {}
+    },
+    {
+      "seq": 6,
+      "time": "2026-10-02T17:35:45.554579+00:00",
+      "kind": "tool_result",
+      "title": "submit_patch 失败",
+      "data": {
+        "ok": false,
+        "error": "invalid_arguments"
+      }
+    }
+  ],
+  "diff": "",
+  "visible": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... FAIL\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n======================================================================\nFAIL: test_exact_deadline (test_visible.VisibleTests.test_exact_deadline)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_exact_deadline\n    self.assertEqual(cache.get(\"token\", \"missing\"), \"missing\")\nAssertionError: 'abc' != 'missing'\n- abc\n+ missing\n\n\n----------------------------------------------------------------------\nRan 3 tests in 0.006s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 828,
+    "image": "python:3.12-slim"
+  },
+  "hidden": null,
+  "baseline": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_before_deadline (test_visible.VisibleTests.test_before_deadline) ... ok\ntest_exact_deadline (test_visible.VisibleTests.test_exact_deadline) ... FAIL\ntest_missing_default (test_visible.VisibleTests.test_missing_default) ... ok\n\n======================================================================\nFAIL: test_exact_deadline (test_visible.VisibleTests.test_exact_deadline)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_exact_deadline\n    self.assertEqual(cache.get(\"token\", \"missing\"), \"missing\")\nAssertionError: 'abc' != 'missing'\n- abc\n+ missing\n\n\n----------------------------------------------------------------------\nRan 3 tests in 0.006s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 828,
+    "image": "python:3.12-slim"
+  },
+  "summary": "",
+  "error": "invalid_arguments",
+  "files_changed": 0,
+  "cancel_requested": false,
+  "model": "deepseek-flash",
+  "task_sha256": "bf7b1ebce60954ce88d0c5fa76d77b2a98c71788fd0306c86aa69cdd4ba32ccf",
+  "elapsed_ms": 2094,
+  "source_sha256": "864f28a217c118be6079b36434262f2d11813dfc507de6cbb945deea8248c12a"
+}

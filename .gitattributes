@@ -1,0 +1,4 @@
+# Preserve exact source and fixture bytes used by the recorded SHA-256 hashes.
+# Python and JSON readers support the existing LF and CRLF files on all platforms.
+* -text
+*.png binary

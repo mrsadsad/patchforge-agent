@@ -1,0 +1,211 @@
+{
+  "id": "1ab8c799270e4889",
+  "task_id": "upstream-cachetools-growing-entry",
+  "title": "真实缺陷 · 缓存扩容覆盖过度驱逐",
+  "mode": "live",
+  "strategy": "direct",
+  "status": "completed",
+  "phase": "done",
+  "created_at": "2026-10-02T18:01:21.244820+00:00",
+  "updated_at": "2026-10-02T18:01:26.466139+00:00",
+  "steps": 1,
+  "max_steps": 1,
+  "tool_calls": 1,
+  "tokens": 7070,
+  "usage_complete": true,
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-10-02T18:01:21.368127+00:00",
+      "kind": "started",
+      "title": "创建独立工作副本",
+      "data": {
+        "mode": "live",
+        "strategy": "direct",
+        "task_sha256": "2b9eeaefbd0b9279fc54ed40df4325573db0449c36dacf308779fc11a1bf3525",
+        "editable": [
+          "cachetools/__init__.py"
+        ]
+      }
+    },
+    {
+      "seq": 2,
+      "time": "2026-10-02T18:01:21.414821+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 3,
+      "time": "2026-10-02T18:01:22.395773+00:00",
+      "kind": "test_result",
+      "title": "可见测试未通过",
+      "data": {
+        "total": 3,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": false,
+        "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... FAIL\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n======================================================================\nFAIL: test_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_growth_that_fits_preserves_other_entries\n    self.assertEqual(dict(cache), {\"a\": \"aaa\", \"b\": \"BBBBBBB\"})\nAssertionError: {'b': 'BBBBBBB'} != {'a': 'aaa', 'b': 'BBBBBBB'}\n- {'b': 'BBBBBBB'}\n+ {'a': 'aaa', 'b': 'BBBBBBB'}\n\n----------------------------------------------------------------------\nRan 3 tests in 0.004s\n\nFAILED (failures=1)\n",
+        "elapsed_ms": 844,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "145e4405ab436e2c3b4199609da94d336cc3856cb0eb35e5828c20bd9eb9366e"
+      }
+    },
+    {
+      "seq": 4,
+      "time": "2026-10-02T18:01:22.538451+00:00",
+      "kind": "context_prepared",
+      "title": "构建有界源码上下文",
+      "data": {
+        "chars": 24234,
+        "omitted_files": []
+      }
+    },
+    {
+      "seq": 5,
+      "time": "2026-10-02T18:01:22.692056+00:00",
+      "kind": "model_request",
+      "title": "第 1 次模型请求",
+      "data": {
+        "remaining": 0
+      }
+    },
+    {
+      "seq": 6,
+      "time": "2026-10-02T18:01:23.991260+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 7070,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 7,
+      "time": "2026-10-02T18:01:24.061737+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · submit_patch",
+      "data": {
+        "arguments": "{\"edits\": [{\"path\": \"cachetools/__init__.py\", \"old\": \"        if key not in self.__data or self.__size[key] < size:\\n            while self.__currsize + size > maxsize:\\n                self.popitem()\\n        if key in self.__data:\", \"new\": \"        if key not in self.__data or self.__size[key] < size:\\n            oldsize = self.__size[key] if key in self.__data else 0\\n            while self.__currsize - oldsize + size > maxsize:\\n                self.popitem()\\n                if key not in self.__data:\\n                    oldsize = 0\\n        if key in self.__data:\"}], \"summary\": \"Fix Cache.__setitem__ capacity accounting so growing an existing value subtracts the old size before evicting, and resets the old size if eviction removes the key being replaced.\"}"
+      }
+    },
+    {
+      "seq": 8,
+      "time": "2026-10-02T18:01:24.203261+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 9,
+      "time": "2026-10-02T18:01:25.219856+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... ok\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 937,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "70f6c08d98bcb01db7f3918580e004511e860e8b25ddc7fa22884463f23ea5e9"
+      }
+    },
+    {
+      "seq": 10,
+      "time": "2026-10-02T18:01:25.283495+00:00",
+      "kind": "test_started",
+      "title": "执行提交后保留测试",
+      "data": {}
+    },
+    {
+      "seq": 11,
+      "time": "2026-10-02T18:01:26.244373+00:00",
+      "kind": "test_result",
+      "title": "保留测试通过",
+      "data": {
+        "total": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_evicted_replacement_key_requires_full_reservation (test_hidden.WithheldBoundaries.test_evicted_replacement_key_requires_full_reservation) ... ok\ntest_growth_policy_shared_by_all_cache_types (test_hidden.WithheldBoundaries.test_growth_policy_shared_by_all_cache_types) ... ok\ntest_lru_evicts_only_necessary_unrelated_entry (test_hidden.WithheldBoundaries.test_lru_evicts_only_necessary_unrelated_entry) ... ok\ntest_shrinking_zero_size_and_new_insertion (test_hidden.WithheldBoundaries.test_shrinking_zero_size_and_new_insertion) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 859,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "70f6c08d98bcb01db7f3918580e004511e860e8b25ddc7fa22884463f23ea5e9"
+      }
+    },
+    {
+      "seq": 12,
+      "time": "2026-10-02T18:01:26.318283+00:00",
+      "kind": "completed",
+      "title": "补丁通过两层测试，可供审阅",
+      "data": {}
+    },
+    {
+      "seq": 13,
+      "time": "2026-10-02T18:01:26.408986+00:00",
+      "kind": "tool_result",
+      "title": "submit_patch 完成",
+      "data": {
+        "ok": true,
+        "submitted": true
+      }
+    }
+  ],
+  "diff": "--- a/cachetools/__init__.py\n+++ b/cachetools/__init__.py\n@@ -80,8 +80,11 @@\n         if size > maxsize:\n             raise ValueError(\"value too large\")\n         if key not in self.__data or self.__size[key] < size:\n-            while self.__currsize + size > maxsize:\n+            oldsize = self.__size[key] if key in self.__data else 0\n+            while self.__currsize - oldsize + size > maxsize:\n                 self.popitem()\n+                if key not in self.__data:\n+                    oldsize = 0\n         if key in self.__data:\n             diffsize = size - self.__size[key]\n         else:\n",
+  "visible": {
+    "total": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... ok\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 937,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "70f6c08d98bcb01db7f3918580e004511e860e8b25ddc7fa22884463f23ea5e9"
+  },
+  "hidden": {
+    "total": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_evicted_replacement_key_requires_full_reservation (test_hidden.WithheldBoundaries.test_evicted_replacement_key_requires_full_reservation) ... ok\ntest_growth_policy_shared_by_all_cache_types (test_hidden.WithheldBoundaries.test_growth_policy_shared_by_all_cache_types) ... ok\ntest_lru_evicts_only_necessary_unrelated_entry (test_hidden.WithheldBoundaries.test_lru_evicts_only_necessary_unrelated_entry) ... ok\ntest_shrinking_zero_size_and_new_insertion (test_hidden.WithheldBoundaries.test_shrinking_zero_size_and_new_insertion) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 859,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "70f6c08d98bcb01db7f3918580e004511e860e8b25ddc7fa22884463f23ea5e9"
+  },
+  "baseline": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... FAIL\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n======================================================================\nFAIL: test_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_growth_that_fits_preserves_other_entries\n    self.assertEqual(dict(cache), {\"a\": \"aaa\", \"b\": \"BBBBBBB\"})\nAssertionError: {'b': 'BBBBBBB'} != {'a': 'aaa', 'b': 'BBBBBBB'}\n- {'b': 'BBBBBBB'}\n+ {'a': 'aaa', 'b': 'BBBBBBB'}\n\n----------------------------------------------------------------------\nRan 3 tests in 0.004s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 844,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "145e4405ab436e2c3b4199609da94d336cc3856cb0eb35e5828c20bd9eb9366e"
+  },
+  "summary": "Fix Cache.__setitem__ capacity accounting so growing an existing value subtracts the old size before evicting, and resets the old size if eviction removes the key being replaced.",
+  "error": null,
+  "files_changed": 1,
+  "cancel_requested": false,
+  "model": "deepseek-flash",
+  "task_sha256": "2b9eeaefbd0b9279fc54ed40df4325573db0449c36dacf308779fc11a1bf3525",
+  "elapsed_ms": 5141,
+  "source_sha256": "3c8753dd144d619ddc2fc81c0900b4331ac86f3f173d9a5e5a69c4f55099b8d7",
+  "workspace_sha256": "70f6c08d98bcb01db7f3918580e004511e860e8b25ddc7fa22884463f23ea5e9",
+  "checkpoints": [],
+  "context_stats": {
+    "before_chars": 24234,
+    "after_chars": 24234,
+    "compacted_groups": 0,
+    "over_limit": false,
+    "initial_chars": 24234
+  },
+  "protocol_errors": 0
+}

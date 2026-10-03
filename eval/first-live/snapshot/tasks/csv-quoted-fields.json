@@ -1,0 +1,23 @@
+{
+  "id": "csv-quoted-fields",
+  "title": "修复 CSV 引号与多行字段",
+  "category": "Data ingestion",
+  "difficulty": "medium",
+  "split": "development",
+  "issue": "Synthetic development fixture, hand-authored for PatchForge; not an external benchmark.\n\nRepair parse_records(text), a CSV import helper. Input is a valid comma-delimited CSV string with a header row and unique header names. Return a list of dictionaries of string values using the header names. Support standard double-quoted fields, commas and embedded newlines inside quoted fields, doubled quotes, LF and CRLF line endings, and empty cells. Skip genuinely blank rows; an empty input or header-only input returns []. Preserve field whitespace. Rows have exactly the header's number of cells. Use the standard library only. The current split-based parser corrupts quoted fields.",
+  "files": {
+    "solution.py": "import csv\nimport io\n\n\ndef parse_records(text):\n    lines = [line for line in text.splitlines() if line]\n    if not lines:\n        return []\n    headers = lines[0].split(\",\")\n    return [dict(zip(headers, line.split(\",\"))) for line in lines[1:]]\n",
+    "test_visible.py": "import unittest\nfrom solution import parse_records\n\nclass VisibleTests(unittest.TestCase):\n    def test_plain_csv(self):\n        self.assertEqual(parse_records(\"name,team\\nAda,infra\\n\"), [{\"name\": \"Ada\", \"team\": \"infra\"}])\n\n    def test_quoted_comma(self):\n        self.assertEqual(parse_records('name,note\\nAda,\"hello, world\"\\n'), [{\"name\": \"Ada\", \"note\": \"hello, world\"}])\n\n    def test_escaped_quote(self):\n        self.assertEqual(parse_records('name,note\\nAda,\"says \"\"yes\"\"\"\\n'), [{\"name\": \"Ada\", \"note\": 'says \"yes\"'}])\n"
+  },
+  "editable": [
+    "solution.py"
+  ],
+  "hidden_tests": "import unittest\nfrom solution import parse_records\n\nclass HiddenTests(unittest.TestCase):\n    def test_embedded_newline(self):\n        self.assertEqual(parse_records('id,note\\n1,\"line one\\nline two\"\\n'), [{\"id\": \"1\", \"note\": \"line one\\nline two\"}])\n\n    def test_crlf(self):\n        self.assertEqual(parse_records(\"id,name\\r\\n1,Ada\\r\\n2,Lin\\r\\n\"), [{\"id\": \"1\", \"name\": \"Ada\"}, {\"id\": \"2\", \"name\": \"Lin\"}])\n\n    def test_blank_rows_empty_and_header_only(self):\n        self.assertEqual(parse_records(\"\"), [])\n        self.assertEqual(parse_records(\"id,name\\n\"), [])\n        self.assertEqual(parse_records(\"id,name\\n\\n1,Ada\\n\\n\"), [{\"id\": \"1\", \"name\": \"Ada\"}])\n\n    def test_empty_cells_and_whitespace(self):\n        self.assertEqual(parse_records('id,note\\n1,\\n2,\"  keep  \"\\n'), [{\"id\": \"1\", \"note\": \"\"}, {\"id\": \"2\", \"note\": \"  keep  \"}])\n",
+  "demo_edits": [
+    {
+      "path": "solution.py",
+      "old": "    lines = [line for line in text.splitlines() if line]\n    if not lines:\n        return []\n    headers = lines[0].split(\",\")\n    return [dict(zip(headers, line.split(\",\"))) for line in lines[1:]]",
+      "new": "    return list(csv.DictReader(io.StringIO(text, newline=\"\")))"
+    }
+  ]
+}

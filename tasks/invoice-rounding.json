@@ -1,0 +1,23 @@
+{
+  "id": "invoice-rounding",
+  "title": "修复金额计算的提前舍入",
+  "category": "Decimal precision",
+  "difficulty": "medium",
+  "split": "development",
+  "issue": "Synthetic development fixture, hand-authored for PatchForge; not an external benchmark.\n\nRepair invoice_total(lines, discount=\"0\", tax=\"0\"). lines is a list of (unit_price, quantity) pairs; unit_price, discount and tax are finite decimal strings and quantity is a nonnegative integer. Sum exact unit_price * quantity products, then apply the fractional discount, then fractional tax: subtotal * (1-discount) * (1+tax). Round exactly once, at the final result, to Decimal(\"0.01\") using ROUND_HALF_UP. Return a Decimal, including Decimal(\"0.00\") for empty lines. Reject negative prices/quantities, discount outside [0,1], or negative tax with ValueError. Do not use binary floating point. The current code rounds each line before accumulating and overcharges small line items.",
+  "files": {
+    "solution.py": "from decimal import Decimal, ROUND_HALF_UP\n\nCENT = Decimal(\"0.01\")\n\n\ndef invoice_total(lines, discount=\"0\", tax=\"0\"):\n    discount = Decimal(discount)\n    tax = Decimal(tax)\n    if not Decimal(\"0\") <= discount <= Decimal(\"1\") or tax < 0:\n        raise ValueError(\"invalid discount or tax\")\n    subtotal = Decimal(\"0\")\n    for unit_price, quantity in lines:\n        price = Decimal(unit_price)\n        if price < 0 or not isinstance(quantity, int) or quantity < 0:\n            raise ValueError(\"invalid line item\")\n        subtotal += (price * quantity).quantize(CENT, rounding=ROUND_HALF_UP)\n    total = subtotal * (Decimal(\"1\") - discount) * (Decimal(\"1\") + tax)\n    return total.quantize(CENT, rounding=ROUND_HALF_UP)\n",
+    "test_visible.py": "import unittest\nfrom decimal import Decimal\nfrom solution import invoice_total\n\nclass VisibleTests(unittest.TestCase):\n    def test_exact_prices_and_quantities(self):\n        self.assertEqual(invoice_total([(\"12.30\", 2), (\"1.10\", 3)]), Decimal(\"27.90\"))\n\n    def test_sum_before_rounding(self):\n        self.assertEqual(invoice_total([(\"0.005\", 1), (\"0.005\", 1)]), Decimal(\"0.01\"))\n\n    def test_discount_then_tax(self):\n        self.assertEqual(invoice_total([(\"100\", 1)], discount=\"0.10\", tax=\"0.06\"), Decimal(\"95.40\"))\n"
+  },
+  "editable": [
+    "solution.py"
+  ],
+  "hidden_tests": "import unittest\nfrom decimal import Decimal\nfrom solution import invoice_total\n\nclass HiddenTests(unittest.TestCase):\n    def test_no_rounding_before_discount(self):\n        self.assertEqual(invoice_total([(\"0.045\", 1)], discount=\"0.5\"), Decimal(\"0.02\"))\n\n    def test_half_up_final_rounding(self):\n        self.assertEqual(invoice_total([(\"1.005\", 1)]), Decimal(\"1.01\"))\n        self.assertEqual(invoice_total([(\"0.335\", 3)]), Decimal(\"1.01\"))\n\n    def test_empty_zero_and_full_discount(self):\n        for lines, discount in (([], \"0\"), ([(\"99.99\", 0)], \"0\"), ([(\"99.99\", 2)], \"1\")):\n            result = invoice_total(lines, discount=discount)\n            self.assertIsInstance(result, Decimal)\n            self.assertEqual(str(result), \"0.00\")\n\n    def test_invalid_values(self):\n        for lines, kwargs in (([(\"-1\", 1)], {}), ([(\"1\", -1)], {}), ([], {\"discount\": \"1.1\"}), ([], {\"discount\": \"-0.1\"}), ([], {\"tax\": \"-0.1\"})):\n            with self.subTest(lines=lines, kwargs=kwargs), self.assertRaises(ValueError):\n                invoice_total(lines, **kwargs)\n",
+  "demo_edits": [
+    {
+      "path": "solution.py",
+      "old": "subtotal += (price * quantity).quantize(CENT, rounding=ROUND_HALF_UP)",
+      "new": "subtotal += price * quantity"
+    }
+  ]
+}

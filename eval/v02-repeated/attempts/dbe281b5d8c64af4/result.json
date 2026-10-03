@@ -1,0 +1,366 @@
+{
+  "id": "dbe281b5d8c64af4",
+  "task_id": "upstream-cachetools-growing-entry",
+  "title": "真实缺陷 · 缓存扩容覆盖过度驱逐",
+  "mode": "live",
+  "strategy": "repair",
+  "status": "completed",
+  "phase": "done",
+  "created_at": "2026-10-02T18:02:02.036240+00:00",
+  "updated_at": "2026-10-02T18:02:12.426321+00:00",
+  "steps": 4,
+  "max_steps": 10,
+  "tool_calls": 4,
+  "tokens": 34569,
+  "usage_complete": true,
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-10-02T18:02:02.186810+00:00",
+      "kind": "started",
+      "title": "创建独立工作副本",
+      "data": {
+        "mode": "live",
+        "strategy": "repair",
+        "task_sha256": "2b9eeaefbd0b9279fc54ed40df4325573db0449c36dacf308779fc11a1bf3525",
+        "editable": [
+          "cachetools/__init__.py"
+        ]
+      }
+    },
+    {
+      "seq": 2,
+      "time": "2026-10-02T18:02:02.259767+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 3,
+      "time": "2026-10-02T18:02:03.392635+00:00",
+      "kind": "test_result",
+      "title": "可见测试未通过",
+      "data": {
+        "total": 3,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": false,
+        "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... FAIL\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n======================================================================\nFAIL: test_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_growth_that_fits_preserves_other_entries\n    self.assertEqual(dict(cache), {\"a\": \"aaa\", \"b\": \"BBBBBBB\"})\nAssertionError: {'b': 'BBBBBBB'} != {'a': 'aaa', 'b': 'BBBBBBB'}\n- {'b': 'BBBBBBB'}\n+ {'a': 'aaa', 'b': 'BBBBBBB'}\n\n----------------------------------------------------------------------\nRan 3 tests in 0.005s\n\nFAILED (failures=1)\n",
+        "elapsed_ms": 1000,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "145e4405ab436e2c3b4199609da94d336cc3856cb0eb35e5828c20bd9eb9366e"
+      }
+    },
+    {
+      "seq": 4,
+      "time": "2026-10-02T18:02:03.524642+00:00",
+      "kind": "context_prepared",
+      "title": "构建有界源码上下文",
+      "data": {
+        "chars": 24247,
+        "omitted_files": []
+      }
+    },
+    {
+      "seq": 5,
+      "time": "2026-10-02T18:02:03.649165+00:00",
+      "kind": "model_request",
+      "title": "第 1 次模型请求",
+      "data": {
+        "remaining": 9
+      }
+    },
+    {
+      "seq": 6,
+      "time": "2026-10-02T18:02:04.520778+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 7361,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 7,
+      "time": "2026-10-02T18:02:04.624450+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · read_file",
+      "data": {
+        "arguments": "{\"path\": \"cachetools/__init__.py\", \"start_line\": 20, \"end_line\": 170}"
+      }
+    },
+    {
+      "seq": 8,
+      "time": "2026-10-02T18:02:04.725548+00:00",
+      "kind": "tool_result",
+      "title": "read_file 完成",
+      "data": {
+        "ok": true,
+        "path": "cachetools/__init__.py",
+        "start_line": 20,
+        "end_line": 170,
+        "total_lines": 792,
+        "content": "import heapq\nimport random\nimport time\n\nfrom . import keys\n\n\nclass _DefaultSize:\n    \"\"\"A minimal \"fake\" dict that returns a constant size 1 for any key.\"\"\"\n\n    __slots__ = ()\n\n    def __getitem__(self, _key):\n        return 1\n\n    def __setitem__(self, _key, _value):\n        pass\n\n    def pop(self, _key):\n        return 1\n\n    def clear(self):\n        pass\n\n\nclass Cache(collections.abc.MutableMapping):\n    \"\"\"Mutable mapping to serve as a simple cache or cache base class.\"\"\"\n\n    __marker = object()\n\n    __size = _DefaultSize()\n\n    def __init__(self, maxsize, getsizeof=None):\n        if getsizeof:\n            self.getsizeof = getsizeof\n        if self.getsizeof is not Cache.getsizeof:\n            self.__size = {}\n        self.__data = {}\n        self.__currsize = 0\n        self.__maxsize = maxsize\n\n    def __repr__(self):\n        return \"%s(%s, maxsize=%r, currsize=%r)\" % (\n            type(self).__name__,\n            repr(self.__data),\n            self.__maxsize,\n            self.__currsize,\n        )\n\n    def __getitem__(self, key):\n        try:\n            return self.__data[key]\n        except KeyError:\n            return self.__missing__(key)\n\n    def __setitem__(self, key, value):\n        maxsize = self.__maxsize\n        size = self.getsizeof(value)\n        if size < 0:\n            raise ValueError(\"value size must be non-negative\")\n        if size > maxsize:\n            raise ValueError(\"value too large\")\n        if key not in self.__data or self.__size[key] < size:\n            while self.__currsize + size > maxsize:\n                self.popitem()\n        if key in self.__data:\n            diffsize = size - self.__size[key]\n        else:\n            diffsize = size\n        self.__data[key] = value\n        self.__size[key] = size\n        self.__currsize += diffsize\n\n    def __delitem__(self, key):\n        size = self.__size.pop(key)\n        del self.__data[key]\n        self.__currsize -= size\n\n    def __contains__(self, key):\n        return key in self.__data\n\n    def __missing__(self, key):\n        raise KeyError(key)\n\n    def __iter__(self):\n        return iter(self.__data)\n\n    def __len__(self):\n        return len(self.__data)\n\n    # Note that we cannot simply inherit get(), pop() and setdefault()\n    # from MutableMapping, since these rely on __getitem__ throwing a\n    # KeyError on cache miss.  This is not the case if __missing__ is\n    # implemented for a Cache subclass, so we have to roll our own,\n    # somewhat less elegant versions.\n\n    def get(self, key, default=None):\n        if key in self:\n            return self[key]\n        else:\n            return default\n\n    def pop(self, key, default=__marker):\n        if key in self:\n            value = self[key]\n            del self[key]\n        elif default is self.__marker:\n            raise KeyError(key)\n        else:\n            value = default\n        return value\n\n    def setdefault(self, key, default=None):\n        if key in self:\n            value = self[key]\n        else:\n            self[key] = value = default\n        return value\n\n    # Although the MutableMapping.clear() default implementation works\n    # perfectly well, it calls popitem() in a loop until the cache is\n    # empty, resulting in O(n) complexity.  For large caches, this\n    # becomes a significant performance bottleneck, so we provide an\n    # optimized version for each Cache subclass.\n\n    def clear(self):\n        self.__data.clear()\n        self.__size.clear()\n        self.__currsize = 0\n\n    @property\n    def maxsize(self):\n        \"\"\"The maximum size of the cache.\"\"\"\n        return self.__maxsize\n\n    @property\n    def currsize(self):\n        \"\"\"The current size of the cache.\"\"\"\n        return self.__currsize\n\n    @staticmethod\n    def getsizeof(value):\n        \"\"\"Return the size of a cache element's value.\"\"\"\n        return 1\n\n\nclass FIFOCache(Cache):\n    \"\"\"First In First Out (FIFO) cache implementation.\"\"\"\n\n    def __init__(self, maxsize, getsizeof=None):\n        Cache.__init__(self, maxsize, getsizeof)\n",
+        "truncated": true
+      }
+    },
+    {
+      "seq": 9,
+      "time": "2026-10-02T18:02:04.794626+00:00",
+      "kind": "model_request",
+      "title": "第 2 次模型请求",
+      "data": {
+        "remaining": 8
+      }
+    },
+    {
+      "seq": 10,
+      "time": "2026-10-02T18:02:05.856131+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 8859,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 11,
+      "time": "2026-10-02T18:02:05.985051+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · apply_edits",
+      "data": {
+        "arguments": "{\"edits\": [{\"path\": \"cachetools/__init__.py\", \"old\": \"        if key not in self.__data or self.__size[key] < size:\\n            while self.__currsize + size > maxsize:\\n                self.popitem()\\n        if key in self.__data:\\n            diffsize = size - self.__size[key]\\n        else:\\n            diffsize = size\\n        self.__data[key] = value\\n        self.__size[key] = size\\n        self.__currsize += diffsize\", \"new\": \"        if key in self.__data:\\n            diffsize = size - self.__size[key]\\n        else:\\n            diffsize = size\\n        while self.__currsize + diffsize > maxsize:\\n            self.popitem()\\n            if key not in self.__data:\\n                diffsize = size\\n        self.__data[key] = value\\n        self.__size[key] = size\\n        self.__currsize += diffsize\"}]}"
+      }
+    },
+    {
+      "seq": 12,
+      "time": "2026-10-02T18:02:06.336643+00:00",
+      "kind": "tool_result",
+      "title": "apply_edits 完成",
+      "data": {
+        "ok": true,
+        "paths": [
+          "cachetools/__init__.py"
+        ],
+        "workspace_sha256": "cdb60418c0474ed37acbac54abe93e1c4d857bfeefb1899e2e8f8680fca7a606",
+        "message": "All edits applied. Earlier test results are stale; rerun tests."
+      }
+    },
+    {
+      "seq": 13,
+      "time": "2026-10-02T18:02:06.513189+00:00",
+      "kind": "model_request",
+      "title": "第 3 次模型请求",
+      "data": {
+        "remaining": 7
+      }
+    },
+    {
+      "seq": 14,
+      "time": "2026-10-02T18:02:07.381102+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 8975,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 15,
+      "time": "2026-10-02T18:02:07.478223+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · run_tests",
+      "data": {
+        "arguments": "{}"
+      }
+    },
+    {
+      "seq": 16,
+      "time": "2026-10-02T18:02:07.541619+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 17,
+      "time": "2026-10-02T18:02:08.988514+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... ok\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 1375,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "cdb60418c0474ed37acbac54abe93e1c4d857bfeefb1899e2e8f8680fca7a606"
+      }
+    },
+    {
+      "seq": 18,
+      "time": "2026-10-02T18:02:09.038139+00:00",
+      "kind": "tool_result",
+      "title": "run_tests 完成",
+      "data": {
+        "ok": true,
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... ok\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 1375,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "cdb60418c0474ed37acbac54abe93e1c4d857bfeefb1899e2e8f8680fca7a606"
+      }
+    },
+    {
+      "seq": 19,
+      "time": "2026-10-02T18:02:09.105805+00:00",
+      "kind": "model_request",
+      "title": "第 4 次模型请求",
+      "data": {
+        "remaining": 6
+      }
+    },
+    {
+      "seq": 20,
+      "time": "2026-10-02T18:02:10.104449+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 9374,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 21,
+      "time": "2026-10-02T18:02:10.157389+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · finish",
+      "data": {
+        "arguments": "{\"summary\": \"Fixed Cache.__setitem__ capacity accounting: compute diffsize (replacement delta) before eviction, evict while currsize + diffsize exceeds maxsize, and if eviction removes the key being replaced, recompute diffsize as the full new size. This preserves each derived cache's eviction policy, keeps currsize equal to summed item sizes, and retains behavior for equal-size replacements, shrinking values, new insertions, and oversized-value errors.\"}"
+      }
+    },
+    {
+      "seq": 22,
+      "time": "2026-10-02T18:02:10.192155+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 23,
+      "time": "2026-10-02T18:02:11.234582+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... ok\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 984,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "cdb60418c0474ed37acbac54abe93e1c4d857bfeefb1899e2e8f8680fca7a606"
+      }
+    },
+    {
+      "seq": 24,
+      "time": "2026-10-02T18:02:11.278206+00:00",
+      "kind": "test_started",
+      "title": "执行提交后保留测试",
+      "data": {}
+    },
+    {
+      "seq": 25,
+      "time": "2026-10-02T18:02:12.305078+00:00",
+      "kind": "test_result",
+      "title": "保留测试通过",
+      "data": {
+        "total": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_evicted_replacement_key_requires_full_reservation (test_hidden.WithheldBoundaries.test_evicted_replacement_key_requires_full_reservation) ... ok\ntest_growth_policy_shared_by_all_cache_types (test_hidden.WithheldBoundaries.test_growth_policy_shared_by_all_cache_types) ... ok\ntest_lru_evicts_only_necessary_unrelated_entry (test_hidden.WithheldBoundaries.test_lru_evicts_only_necessary_unrelated_entry) ... ok\ntest_shrinking_zero_size_and_new_insertion (test_hidden.WithheldBoundaries.test_shrinking_zero_size_and_new_insertion) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 984,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "cdb60418c0474ed37acbac54abe93e1c4d857bfeefb1899e2e8f8680fca7a606"
+      }
+    },
+    {
+      "seq": 26,
+      "time": "2026-10-02T18:02:12.340631+00:00",
+      "kind": "completed",
+      "title": "补丁通过两层测试，可供审阅",
+      "data": {}
+    },
+    {
+      "seq": 27,
+      "time": "2026-10-02T18:02:12.381639+00:00",
+      "kind": "tool_result",
+      "title": "finish 完成",
+      "data": {
+        "ok": true,
+        "submitted": true
+      }
+    }
+  ],
+  "diff": "--- a/cachetools/__init__.py\n+++ b/cachetools/__init__.py\n@@ -79,13 +79,14 @@\n             raise ValueError(\"value size must be non-negative\")\n         if size > maxsize:\n             raise ValueError(\"value too large\")\n-        if key not in self.__data or self.__size[key] < size:\n-            while self.__currsize + size > maxsize:\n-                self.popitem()\n         if key in self.__data:\n             diffsize = size - self.__size[key]\n         else:\n             diffsize = size\n+        while self.__currsize + diffsize > maxsize:\n+            self.popitem()\n+            if key not in self.__data:\n+                diffsize = size\n         self.__data[key] = value\n         self.__size[key] = size\n         self.__currsize += diffsize\n",
+  "visible": {
+    "total": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... ok\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 984,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "cdb60418c0474ed37acbac54abe93e1c4d857bfeefb1899e2e8f8680fca7a606"
+  },
+  "hidden": {
+    "total": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_evicted_replacement_key_requires_full_reservation (test_hidden.WithheldBoundaries.test_evicted_replacement_key_requires_full_reservation) ... ok\ntest_growth_policy_shared_by_all_cache_types (test_hidden.WithheldBoundaries.test_growth_policy_shared_by_all_cache_types) ... ok\ntest_lru_evicts_only_necessary_unrelated_entry (test_hidden.WithheldBoundaries.test_lru_evicts_only_necessary_unrelated_entry) ... ok\ntest_shrinking_zero_size_and_new_insertion (test_hidden.WithheldBoundaries.test_shrinking_zero_size_and_new_insertion) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 984,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "cdb60418c0474ed37acbac54abe93e1c4d857bfeefb1899e2e8f8680fca7a606"
+  },
+  "baseline": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_equal_size_replacement (test_visible.VisibleRegression.test_equal_size_replacement) ... ok\ntest_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries) ... FAIL\ntest_oversized_replacement_preserves_original (test_visible.VisibleRegression.test_oversized_replacement_preserves_original) ... ok\n\n======================================================================\nFAIL: test_growth_that_fits_preserves_other_entries (test_visible.VisibleRegression.test_growth_that_fits_preserves_other_entries)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 10, in test_growth_that_fits_preserves_other_entries\n    self.assertEqual(dict(cache), {\"a\": \"aaa\", \"b\": \"BBBBBBB\"})\nAssertionError: {'b': 'BBBBBBB'} != {'a': 'aaa', 'b': 'BBBBBBB'}\n- {'b': 'BBBBBBB'}\n+ {'a': 'aaa', 'b': 'BBBBBBB'}\n\n----------------------------------------------------------------------\nRan 3 tests in 0.005s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 1000,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "145e4405ab436e2c3b4199609da94d336cc3856cb0eb35e5828c20bd9eb9366e"
+  },
+  "summary": "Fixed Cache.__setitem__ capacity accounting: compute diffsize (replacement delta) before eviction, evict while currsize + diffsize exceeds maxsize, and if eviction removes the key being replaced, recompute diffsize as the full new size. This preserves each derived cache's eviction policy, keeps currsize equal to summed item sizes, and retains behavior for equal-size replacements, shrinking values, new insertions, and oversized-value errors.",
+  "error": null,
+  "files_changed": 1,
+  "cancel_requested": false,
+  "model": "deepseek-flash",
+  "task_sha256": "2b9eeaefbd0b9279fc54ed40df4325573db0449c36dacf308779fc11a1bf3525",
+  "elapsed_ms": 10312,
+  "source_sha256": "3c8753dd144d619ddc2fc81c0900b4331ac86f3f173d9a5e5a69c4f55099b8d7",
+  "workspace_sha256": "cdb60418c0474ed37acbac54abe93e1c4d857bfeefb1899e2e8f8680fca7a606",
+  "checkpoints": [],
+  "context_stats": {
+    "before_chars": 31614,
+    "after_chars": 31614,
+    "compacted_groups": 0,
+    "over_limit": false,
+    "initial_chars": 24247
+  },
+  "protocol_errors": 0
+}

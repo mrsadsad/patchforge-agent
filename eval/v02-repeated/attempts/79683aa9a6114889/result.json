@@ -1,0 +1,410 @@
+{
+  "id": "79683aa9a6114889",
+  "task_id": "upstream-cachetools-expired-overwrite",
+  "title": "真实缺陷 · TLRU 过期覆盖保留旧值",
+  "mode": "live",
+  "strategy": "repair",
+  "status": "completed",
+  "phase": "done",
+  "created_at": "2026-10-02T18:00:21.625894+00:00",
+  "updated_at": "2026-10-02T18:00:31.129294+00:00",
+  "steps": 5,
+  "max_steps": 10,
+  "tool_calls": 5,
+  "tokens": 45361,
+  "usage_complete": true,
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-10-02T18:00:21.668549+00:00",
+      "kind": "started",
+      "title": "创建独立工作副本",
+      "data": {
+        "mode": "live",
+        "strategy": "repair",
+        "task_sha256": "4de3cb790d60449c18c257860386e7d0e996cea138d165b6499a799db49b46b4",
+        "editable": [
+          "cachetools/__init__.py"
+        ]
+      }
+    },
+    {
+      "seq": 2,
+      "time": "2026-10-02T18:00:21.693199+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 3,
+      "time": "2026-10-02T18:00:22.566412+00:00",
+      "kind": "test_result",
+      "title": "可见测试未通过",
+      "data": {
+        "total": 3,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": false,
+        "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... FAIL\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n======================================================================\nFAIL: test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 9, in test_dead_on_arrival_replacement_removes_previous_value\n    self.assertNotIn(\"account\", cache)\nAssertionError: 'account' unexpectedly found in TLRUCache({'account': 9}, maxsize=3, currsize=1)\n\n----------------------------------------------------------------------\nRan 3 tests in 0.004s\n\nFAILED (failures=1)\n",
+        "elapsed_ms": 828,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "35118e54313c9eccf08bac3992449b27c08c693031dfb86bea076212807d363f"
+      }
+    },
+    {
+      "seq": 4,
+      "time": "2026-10-02T18:00:22.620630+00:00",
+      "kind": "context_prepared",
+      "title": "构建有界源码上下文",
+      "data": {
+        "chars": 24125,
+        "omitted_files": []
+      }
+    },
+    {
+      "seq": 5,
+      "time": "2026-10-02T18:00:22.684313+00:00",
+      "kind": "model_request",
+      "title": "第 1 次模型请求",
+      "data": {
+        "remaining": 9
+      }
+    },
+    {
+      "seq": 6,
+      "time": "2026-10-02T18:00:23.311042+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 7266,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 7,
+      "time": "2026-10-02T18:00:23.349531+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · read_file",
+      "data": {
+        "arguments": "{\"path\": \"cachetools/__init__.py\", \"start_line\": 560, \"end_line\": 700}"
+      }
+    },
+    {
+      "seq": 8,
+      "time": "2026-10-02T18:00:23.382529+00:00",
+      "kind": "tool_result",
+      "title": "read_file 完成",
+      "data": {
+        "ok": true,
+        "path": "cachetools/__init__.py",
+        "start_line": 560,
+        "end_line": 700,
+        "total_lines": 776,
+        "content": "\n    def popitem(self):\n        \"\"\"Remove and return the `(key, value)` pair least recently used that\n        has not already expired.\n\n        \"\"\"\n        with self.timer as time:\n            self.expire(time)\n            try:\n                key = next(iter(self.__links))\n            except StopIteration:\n                raise KeyError(\"%s is empty\" % type(self).__name__) from None\n            else:\n                return (key, self.pop(key))\n\n    def clear(self):\n        _TimedCache.clear(self)\n        root = self.__root\n        root.prev = root.next = root\n        self.__links.clear()\n\n    def __getlink(self, key):\n        value = self.__links[key]\n        self.__links.move_to_end(key)\n        return value\n\n\nclass TLRUCache(_TimedCache):\n    \"\"\"Time aware Least Recently Used (TLRU) cache implementation.\"\"\"\n\n    __HEAP_CLEANUP_FACTOR = 2  # clean up the heap if size > N * len(items)\n\n    @functools.total_ordering\n    class _Item:\n        __slots__ = (\"key\", \"expires\", \"removed\")\n\n        def __init__(self, key=None, expires=None):\n            self.key = key\n            self.expires = expires\n            self.removed = False\n\n        def __lt__(self, other):\n            return self.expires < other.expires\n\n    def __init__(self, maxsize, ttu, timer=time.monotonic, getsizeof=None):\n        _TimedCache.__init__(self, maxsize, timer, getsizeof)\n        self.__items = collections.OrderedDict()\n        self.__order = []\n        self.__ttu = ttu\n\n    def __contains__(self, key):\n        try:\n            item = self.__items[key]  # no reordering\n        except KeyError:\n            return False\n        else:\n            return self.timer() < item.expires\n\n    def __getitem__(self, key, cache_getitem=Cache.__getitem__):\n        try:\n            item = self.__getitem(key)\n        except KeyError:\n            expired = False\n        else:\n            expired = not (self.timer() < item.expires)\n        if expired:\n            return self.__missing__(key)\n        else:\n            return cache_getitem(self, key)\n\n    def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):\n        with self.timer as time:\n            expires = self.__ttu(key, value, time)\n            if not (time < expires):\n                return  # skip expired items\n            self.expire(time)\n            cache_setitem(self, key, value)\n        # removing an existing item would break the heap structure, so\n        # only mark it as removed for now\n        try:\n            self.__getitem(key).removed = True\n        except KeyError:\n            pass\n        self.__items[key] = item = TLRUCache._Item(key, expires)\n        heapq.heappush(self.__order, item)\n\n    def __delitem__(self, key, cache_delitem=Cache.__delitem__):\n        with self.timer as time:\n            # no self.expire() for performance reasons, e.g. self.clear() [#67]\n            cache_delitem(self, key)\n        item = self.__items.pop(key)\n        item.removed = True\n        if not (time < item.expires):\n            raise KeyError(key)\n\n    def __iter__(self):\n        for curr in self.__order:\n            # \"freeze\" time for iterator access\n            with self.timer as time:\n                if time < curr.expires and not curr.removed:\n                    yield curr.key\n\n    @property\n    def ttu(self):\n        \"\"\"The local time-to-use function used by the cache.\"\"\"\n        return self.__ttu\n\n    def expire(self, time=None):\n        \"\"\"Remove expired items from the cache and return an iterable of the\n        expired `(key, value)` pairs.\n\n        \"\"\"\n        if time is None:\n            time = self.timer()\n        items = self.__items\n        order = self.__order\n        # clean up the heap if too many items are marked as removed\n        if len(order) > len(items) * self.__HEAP_CLEANUP_FACTOR:\n            self.__order = order = [item for item in order if not item.removed]\n            heapq.heapify(order)\n        expired = []\n        cache_delitem = Cache.__delitem__\n        cache_getitem = Cache.__getitem__\n        while order and (order[0].removed or not (time < order[0].expires)):\n            item = heapq.heappop(order)\n            if not item.removed:\n                expired.append((item.key, cache_getitem(self, item.key)))\n                cache_delitem(self, item.key)\n                del items[item.key]\n        return expired\n\n    def popitem(self):\n        \"\"\"Remove and return the `(key, value)` pair least recently used that\n        has not already expired.\n\n        \"\"\"\n        with self.timer as time:\n            self.expire(time)\n            try:\n                key = next(iter(self.__items))\n            except StopIteration:\n",
+        "truncated": true
+      }
+    },
+    {
+      "seq": 9,
+      "time": "2026-10-02T18:00:23.419697+00:00",
+      "kind": "model_request",
+      "title": "第 2 次模型请求",
+      "data": {
+        "remaining": 8
+      }
+    },
+    {
+      "seq": 10,
+      "time": "2026-10-02T18:00:24.505719+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 8687,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 11,
+      "time": "2026-10-02T18:00:24.546627+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · read_file",
+      "data": {
+        "arguments": "{\"path\": \"cachetools/__init__.py\", \"start_line\": 700, \"end_line\": 776}"
+      }
+    },
+    {
+      "seq": 12,
+      "time": "2026-10-02T18:00:24.576382+00:00",
+      "kind": "tool_result",
+      "title": "read_file 完成",
+      "data": {
+        "ok": true,
+        "path": "cachetools/__init__.py",
+        "start_line": 700,
+        "end_line": 776,
+        "total_lines": 776,
+        "content": "            except StopIteration:\n                raise KeyError(\"%s is empty\" % type(self).__name__) from None\n            else:\n                return (key, self.pop(key))\n\n    def clear(self):\n        _TimedCache.clear(self)\n        self.__items.clear()\n        del self.__order[:]\n\n    def __getitem(self, key):\n        value = self.__items[key]\n        self.__items.move_to_end(key)\n        return value\n\n\n# note that the runtime __name__ is \"CacheInfo\", as in stdlib:\n# https://github.com/python/cpython/blob/3.14/Lib/functools.py#L520\n_CacheInfo = collections.namedtuple(\n    \"CacheInfo\", [\"hits\", \"misses\", \"maxsize\", \"currsize\"]\n)\n\n\ndef cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):\n    \"\"\"Decorator to wrap a function with a memoizing callable that saves\n    results in a cache.\n\n    \"\"\"\n    from ._cached import _wrapper\n\n    def decorator(func):\n        if info:\n            if isinstance(cache, Cache):\n\n                def make_info(hits, misses):\n                    return _CacheInfo(hits, misses, cache.maxsize, cache.currsize)\n\n            elif isinstance(cache, collections.abc.Mapping):\n\n                def make_info(hits, misses):\n                    return _CacheInfo(hits, misses, None, len(cache))\n\n            else:\n\n                def make_info(hits, misses):\n                    return _CacheInfo(hits, misses, 0, 0)\n\n            return _wrapper(func, cache, key, lock, condition, info=make_info)\n        else:\n            return _wrapper(func, cache, key, lock, condition)\n\n    return decorator\n\n\ndef cachedmethod(cache, key=keys.methodkey, lock=None, condition=None, info=False):\n    \"\"\"Decorator to wrap a method with a memoizing callable that saves\n    results in a cache.\n\n    \"\"\"\n    from ._cachedmethod import _wrapper\n\n    def decorator(method):\n        if info:\n\n            def make_info(cache, hits, misses):\n                if isinstance(cache, Cache):\n                    return _CacheInfo(hits, misses, cache.maxsize, cache.currsize)\n                elif isinstance(cache, collections.abc.Mapping):\n                    return _CacheInfo(hits, misses, None, len(cache))\n                else:\n                    raise TypeError(\"cache(self) must return a mutable mapping\")\n\n            return _wrapper(method, cache, key, lock, condition, info=make_info)\n        else:\n            return _wrapper(method, cache, key, lock, condition)\n\n    return decorator\n",
+        "truncated": false
+      }
+    },
+    {
+      "seq": 13,
+      "time": "2026-10-02T18:00:24.614847+00:00",
+      "kind": "model_request",
+      "title": "第 3 次模型请求",
+      "data": {
+        "remaining": 7
+      }
+    },
+    {
+      "seq": 14,
+      "time": "2026-10-02T18:00:25.675541+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 9589,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 15,
+      "time": "2026-10-02T18:00:25.722596+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · replace_text",
+      "data": {
+        "arguments": "{\"path\": \"cachetools/__init__.py\", \"old\": \"            expires = self.__ttu(key, value, time)\\n            if not (time < expires):\\n                return  # skip expired items\\n            self.expire(time)\", \"new\": \"            expires = self.__ttu(key, value, time)\\n            if not (time < expires):\\n                # remove any previous item for this key, but do not store\\n                # the expired replacement\\n                try:\\n                    del self[key]\\n                except KeyError:\\n                    pass\\n                return\\n            self.expire(time)\"}"
+      }
+    },
+    {
+      "seq": 16,
+      "time": "2026-10-02T18:00:25.786808+00:00",
+      "kind": "tool_result",
+      "title": "replace_text 完成",
+      "data": {
+        "ok": true,
+        "paths": [
+          "cachetools/__init__.py"
+        ],
+        "workspace_sha256": "eb6dbe8b4626f454bfaa16222950318c5ab0fdbb738db79b342872e7499edd9c",
+        "message": "All edits applied. Earlier test results are stale; rerun tests.",
+        "path": "cachetools/__init__.py"
+      }
+    },
+    {
+      "seq": 17,
+      "time": "2026-10-02T18:00:25.824384+00:00",
+      "kind": "model_request",
+      "title": "第 4 次模型请求",
+      "data": {
+        "remaining": 6
+      }
+    },
+    {
+      "seq": 18,
+      "time": "2026-10-02T18:00:26.676670+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 9713,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 19,
+      "time": "2026-10-02T18:00:26.731936+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · run_tests",
+      "data": {
+        "arguments": "{}"
+      }
+    },
+    {
+      "seq": 20,
+      "time": "2026-10-02T18:00:26.763780+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 21,
+      "time": "2026-10-02T18:00:27.778325+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... ok\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 969,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "eb6dbe8b4626f454bfaa16222950318c5ab0fdbb738db79b342872e7499edd9c"
+      }
+    },
+    {
+      "seq": 22,
+      "time": "2026-10-02T18:00:27.807448+00:00",
+      "kind": "tool_result",
+      "title": "run_tests 完成",
+      "data": {
+        "ok": true,
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... ok\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 969,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "eb6dbe8b4626f454bfaa16222950318c5ab0fdbb738db79b342872e7499edd9c"
+      }
+    },
+    {
+      "seq": 23,
+      "time": "2026-10-02T18:00:27.844645+00:00",
+      "kind": "model_request",
+      "title": "第 5 次模型请求",
+      "data": {
+        "remaining": 5
+      }
+    },
+    {
+      "seq": 24,
+      "time": "2026-10-02T18:00:29.176812+00:00",
+      "kind": "model_response",
+      "title": "模型响应已收到",
+      "data": {
+        "tokens": 10106,
+        "finish_reason": "tool_calls"
+      }
+    },
+    {
+      "seq": 25,
+      "time": "2026-10-02T18:00:29.226165+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · finish",
+      "data": {
+        "arguments": "{\"summary\": \"In TLRUCache.__setitem__, when the computed deadline is not in the future (expired replacement), the previous entry for that key is now removed via `del self[key]` (guarded by KeyError) instead of silently returning. This keeps membership, reads, iteration, currsize, heap/expiration bookkeeping and future reinsertion consistent, while absent-key assignments remain no-ops and future-dated replacements behave as before.\"}"
+      }
+    },
+    {
+      "seq": 26,
+      "time": "2026-10-02T18:00:29.253831+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 27,
+      "time": "2026-10-02T18:00:30.108290+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... ok\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 829,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "eb6dbe8b4626f454bfaa16222950318c5ab0fdbb738db79b342872e7499edd9c"
+      }
+    },
+    {
+      "seq": 28,
+      "time": "2026-10-02T18:00:30.143585+00:00",
+      "kind": "test_started",
+      "title": "执行提交后保留测试",
+      "data": {}
+    },
+    {
+      "seq": 29,
+      "time": "2026-10-02T18:00:31.004507+00:00",
+      "kind": "test_result",
+      "title": "保留测试通过",
+      "data": {
+        "total": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_already_stale_entry_and_repeated_expired_assignment (test_hidden.WithheldBoundaries.test_already_stale_entry_and_repeated_expired_assignment) ... ok\ntest_custom_sizes_release_capacity (test_hidden.WithheldBoundaries.test_custom_sizes_release_capacity) ... ok\ntest_past_deadline_and_other_keys (test_hidden.WithheldBoundaries.test_past_deadline_and_other_keys) ... ok\ntest_reinserted_key_survives_old_heap_record (test_hidden.WithheldBoundaries.test_reinserted_key_survives_old_heap_record) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 828,
+        "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+        "workspace_sha256": "eb6dbe8b4626f454bfaa16222950318c5ab0fdbb738db79b342872e7499edd9c"
+      }
+    },
+    {
+      "seq": 30,
+      "time": "2026-10-02T18:00:31.045031+00:00",
+      "kind": "completed",
+      "title": "补丁通过两层测试，可供审阅",
+      "data": {}
+    },
+    {
+      "seq": 31,
+      "time": "2026-10-02T18:00:31.086296+00:00",
+      "kind": "tool_result",
+      "title": "finish 完成",
+      "data": {
+        "ok": true,
+        "submitted": true
+      }
+    }
+  ],
+  "diff": "--- a/cachetools/__init__.py\n+++ b/cachetools/__init__.py\n@@ -631,7 +631,13 @@\n         with self.timer as time:\n             expires = self.__ttu(key, value, time)\n             if not (time < expires):\n-                return  # skip expired items\n+                # remove any previous item for this key, but do not store\n+                # the expired replacement\n+                try:\n+                    del self[key]\n+                except KeyError:\n+                    pass\n+                return\n             self.expire(time)\n             cache_setitem(self, key, value)\n         # removing an existing item would break the heap structure, so\n",
+  "visible": {
+    "total": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... ok\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 829,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "eb6dbe8b4626f454bfaa16222950318c5ab0fdbb738db79b342872e7499edd9c"
+  },
+  "hidden": {
+    "total": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_already_stale_entry_and_repeated_expired_assignment (test_hidden.WithheldBoundaries.test_already_stale_entry_and_repeated_expired_assignment) ... ok\ntest_custom_sizes_release_capacity (test_hidden.WithheldBoundaries.test_custom_sizes_release_capacity) ... ok\ntest_past_deadline_and_other_keys (test_hidden.WithheldBoundaries.test_past_deadline_and_other_keys) ... ok\ntest_reinserted_key_survives_old_heap_record (test_hidden.WithheldBoundaries.test_reinserted_key_survives_old_heap_record) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 828,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "eb6dbe8b4626f454bfaa16222950318c5ab0fdbb738db79b342872e7499edd9c"
+  },
+  "baseline": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value) ... FAIL\ntest_expired_new_key_remains_absent (test_visible.VisibleRegression.test_expired_new_key_remains_absent) ... ok\ntest_future_replacement_is_stored (test_visible.VisibleRegression.test_future_replacement_is_stored) ... ok\n\n======================================================================\nFAIL: test_dead_on_arrival_replacement_removes_previous_value (test_visible.VisibleRegression.test_dead_on_arrival_replacement_removes_previous_value)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 9, in test_dead_on_arrival_replacement_removes_previous_value\n    self.assertNotIn(\"account\", cache)\nAssertionError: 'account' unexpectedly found in TLRUCache({'account': 9}, maxsize=3, currsize=1)\n\n----------------------------------------------------------------------\nRan 3 tests in 0.004s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 828,
+    "image": "sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016",
+    "workspace_sha256": "35118e54313c9eccf08bac3992449b27c08c693031dfb86bea076212807d363f"
+  },
+  "summary": "In TLRUCache.__setitem__, when the computed deadline is not in the future (expired replacement), the previous entry for that key is now removed via `del self[key]` (guarded by KeyError) instead of silently returning. This keeps membership, reads, iteration, currsize, heap/expiration bookkeeping and future reinsertion consistent, while absent-key assignments remain no-ops and future-dated replacements behave as before.",
+  "error": null,
+  "files_changed": 1,
+  "cancel_requested": false,
+  "model": "deepseek-flash",
+  "task_sha256": "4de3cb790d60449c18c257860386e7d0e996cea138d165b6499a799db49b46b4",
+  "elapsed_ms": 9454,
+  "source_sha256": "3c8753dd144d619ddc2fc81c0900b4331ac86f3f173d9a5e5a69c4f55099b8d7",
+  "workspace_sha256": "eb6dbe8b4626f454bfaa16222950318c5ab0fdbb738db79b342872e7499edd9c",
+  "checkpoints": [],
+  "context_stats": {
+    "before_chars": 35071,
+    "after_chars": 35071,
+    "compacted_groups": 0,
+    "over_limit": false,
+    "initial_chars": 24125
+  },
+  "protocol_errors": 0
+}

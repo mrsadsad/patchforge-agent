@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "patchforge-agent"
+version = "0.2.0"
+description = "An execution-grounded code repair agent with container verification"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+patchforge = "forge.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["forge*"]
+
+[tool.setuptools.package-data]
+forge = ["web/*.html"]

@@ -1,0 +1,23 @@
+{
+  "id": "dependency-order",
+  "title": "修复依赖调度的稳定顺序",
+  "category": "DAG scheduling",
+  "difficulty": "medium",
+  "split": "development",
+  "issue": "Synthetic development fixture, hand-authored for PatchForge; not an external benchmark.\n\nRepair dependency_order(graph), where graph maps string task names to lists of prerequisite task names. Return every task once, including prerequisite-only names. A task appears only after all prerequisites. Whenever multiple tasks are ready, choose the lexicographically smallest ready task (reconsider the complete ready set after every completion). Duplicate prerequisite names count once. Detect cycles, including disconnected cycles, by raising ValueError. Do not mutate graph or its lists. Empty graph returns []. The current FIFO ready queue violates the lexical policy when a smaller task becomes ready during scheduling.",
+  "files": {
+    "solution.py": "def dependency_order(graph):\n    nodes = set(graph)\n    for dependencies in graph.values():\n        nodes.update(dependencies)\n    dependents = {node: set() for node in nodes}\n    pending = {node: 0 for node in nodes}\n    for node, dependencies in graph.items():\n        unique = set(dependencies)\n        pending[node] = len(unique)\n        for prerequisite in unique:\n            dependents[prerequisite].add(node)\n    available = sorted(node for node in nodes if pending[node] == 0)\n    result = []\n    while available:\n        node = available.pop(0)\n        result.append(node)\n        for dependent in sorted(dependents[node]):\n            pending[dependent] -= 1\n            if pending[dependent] == 0:\n                available.append(dependent)\n    if len(result) != len(nodes):\n        raise ValueError(\"dependency cycle\")\n    return result\n",
+    "test_visible.py": "import unittest\nfrom solution import dependency_order\n\nclass VisibleTests(unittest.TestCase):\n    def test_newly_ready_task_reorders_queue(self):\n        self.assertEqual(dependency_order({\"a\": [], \"b\": [\"a\"], \"z\": []}), [\"a\", \"b\", \"z\"])\n\n    def test_chain(self):\n        self.assertEqual(dependency_order({\"deploy\": [\"test\"], \"test\": [\"build\"], \"build\": []}), [\"build\", \"test\", \"deploy\"])\n\n    def test_cycle(self):\n        with self.assertRaises(ValueError):\n            dependency_order({\"a\": [\"b\"], \"b\": [\"a\"]})\n"
+  },
+  "editable": [
+    "solution.py"
+  ],
+  "hidden_tests": "import unittest\nfrom solution import dependency_order\n\nclass HiddenTests(unittest.TestCase):\n    def test_reference_only_and_duplicate_dependencies(self):\n        self.assertEqual(dependency_order({\"c\": [\"a\", \"a\"], \"b\": [\"a\"]}), [\"a\", \"b\", \"c\"])\n\n    def test_diamond_and_multiple_ready_steps(self):\n        graph = {\"a\": [], \"b\": [\"a\"], \"c\": [\"a\"], \"d\": [\"b\", \"c\"], \"z\": []}\n        self.assertEqual(dependency_order(graph), [\"a\", \"b\", \"c\", \"d\", \"z\"])\n\n    def test_disconnected_cycle_and_self_cycle(self):\n        for graph in ({\"ready\": [], \"x\": [\"y\"], \"y\": [\"x\"]}, {\"x\": [\"x\"]}):\n            with self.subTest(graph=graph), self.assertRaises(ValueError):\n                dependency_order(graph)\n\n    def test_empty_and_no_mutation(self):\n        self.assertEqual(dependency_order({}), [])\n        graph = {\"a\": [], \"b\": [\"a\", \"a\"]}\n        self.assertEqual(dependency_order(graph), [\"a\", \"b\"])\n        self.assertEqual(graph, {\"a\": [], \"b\": [\"a\", \"a\"]})\n",
+  "demo_edits": [
+    {
+      "path": "solution.py",
+      "old": "                available.append(dependent)",
+      "new": "                available.append(dependent)\n                available.sort()"
+    }
+  ]
+}

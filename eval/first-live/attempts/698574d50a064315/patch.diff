@@ -1,0 +1,10 @@
+--- a/solution.py
++++ b/solution.py
+@@ -1,6 +1,6 @@
+ def paginate(items, page, page_size):
+     if page < 1 or page_size < 1:
+         raise ValueError("page and page_size must be positive")
+-    start = page * page_size
++    start = (page - 1) * page_size
+     end = start + page_size
+     return {"items": list(items[start:end]), "total": len(items), "has_next": end < len(items)}

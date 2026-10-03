@@ -1,0 +1,10 @@
+--- a/solution.py
++++ b/solution.py
+@@ -13,6 +13,6 @@
+         price = Decimal(unit_price)
+         if price < 0 or not isinstance(quantity, int) or quantity < 0:
+             raise ValueError("invalid line item")
+-        subtotal += (price * quantity).quantize(CENT, rounding=ROUND_HALF_UP)
++        subtotal += price * quantity
+     total = subtotal * (Decimal("1") - discount) * (Decimal("1") + tax)
+     return total.quantize(CENT, rounding=ROUND_HALF_UP)

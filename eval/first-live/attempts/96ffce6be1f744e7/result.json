@@ -1,0 +1,173 @@
+{
+  "id": "96ffce6be1f744e7",
+  "task_id": "half-open-intervals",
+  "title": "修复半开区间的合并规则",
+  "mode": "live",
+  "strategy": "direct",
+  "status": "completed",
+  "phase": "done",
+  "created_at": "2026-10-02T17:36:47.089246+00:00",
+  "updated_at": "2026-10-02T17:36:50.731414+00:00",
+  "steps": 1,
+  "max_steps": 1,
+  "tool_calls": 1,
+  "tokens": 1459,
+  "usage_complete": true,
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-10-02T17:36:47.125950+00:00",
+      "kind": "started",
+      "title": "创建独立工作副本",
+      "data": {
+        "mode": "live",
+        "strategy": "direct",
+        "task_sha256": "596e88c7582a9fa49c10155a19c1882c8a2bb7a997b6d2b1a1cb7d8dbe0d0028",
+        "editable": [
+          "solution.py"
+        ]
+      }
+    },
+    {
+      "seq": 2,
+      "time": "2026-10-02T17:36:47.152924+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 3,
+      "time": "2026-10-02T17:36:48.012724+00:00",
+      "kind": "test_result",
+      "title": "可见测试未通过",
+      "data": {
+        "total": 3,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "passed": false,
+        "output": "test_nested_windows (test_visible.VisibleTests.test_nested_windows) ... ok\ntest_overlapping_windows (test_visible.VisibleTests.test_overlapping_windows) ... ok\ntest_touching_windows_stay_separate (test_visible.VisibleTests.test_touching_windows_stay_separate) ... FAIL\n\n======================================================================\nFAIL: test_touching_windows_stay_separate (test_visible.VisibleTests.test_touching_windows_stay_separate)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 9, in test_touching_windows_stay_separate\n    self.assertEqual(merge_windows([(1, 3), (3, 5)]), [(1, 3), (3, 5)])\nAssertionError: Lists differ: [(1, 5)] != [(1, 3), (3, 5)]\n\nFirst differing element 0:\n(1, 5)\n(1, 3)\n\nSecond list contains 1 additional elements.\nFirst extra element 1:\n(3, 5)\n\n- [(1, 5)]\n+ [(1, 3), (3, 5)]\n\n----------------------------------------------------------------------\nRan 3 tests in 0.004s\n\nFAILED (failures=1)\n",
+        "elapsed_ms": 828,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 4,
+      "time": "2026-10-02T17:36:48.072606+00:00",
+      "kind": "model_request",
+      "title": "第 1 次模型请求",
+      "data": {
+        "remaining": 0
+      }
+    },
+    {
+      "seq": 5,
+      "time": "2026-10-02T17:36:48.784579+00:00",
+      "kind": "tool_call",
+      "title": "调用工具 · submit_patch",
+      "data": {}
+    },
+    {
+      "seq": 6,
+      "time": "2026-10-02T17:36:48.831459+00:00",
+      "kind": "test_started",
+      "title": "在隔离容器运行可见测试",
+      "data": {}
+    },
+    {
+      "seq": 7,
+      "time": "2026-10-02T17:36:49.684242+00:00",
+      "kind": "test_result",
+      "title": "可见测试通过",
+      "data": {
+        "total": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_nested_windows (test_visible.VisibleTests.test_nested_windows) ... ok\ntest_overlapping_windows (test_visible.VisibleTests.test_overlapping_windows) ... ok\ntest_touching_windows_stay_separate (test_visible.VisibleTests.test_touching_windows_stay_separate) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 812,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 8,
+      "time": "2026-10-02T17:36:49.714992+00:00",
+      "kind": "test_started",
+      "title": "执行提交后保留测试",
+      "data": {}
+    },
+    {
+      "seq": 9,
+      "time": "2026-10-02T17:36:50.646315+00:00",
+      "kind": "test_result",
+      "title": "保留测试通过",
+      "data": {
+        "total": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": true,
+        "output": "test_empty_windows_ignored (test_hidden.HiddenTests.test_empty_windows_ignored) ... ok\ntest_negative_endpoints_and_overlap_bridge (test_hidden.HiddenTests.test_negative_endpoints_and_overlap_bridge) ... ok\ntest_reversed_interval (test_hidden.HiddenTests.test_reversed_interval) ... ok\ntest_sorting_duplicates_and_no_mutation (test_hidden.HiddenTests.test_sorting_duplicates_and_no_mutation) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+        "elapsed_ms": 906,
+        "image": "python:3.12-slim"
+      }
+    },
+    {
+      "seq": 10,
+      "time": "2026-10-02T17:36:50.677960+00:00",
+      "kind": "completed",
+      "title": "补丁通过两层测试，可供审阅",
+      "data": {}
+    },
+    {
+      "seq": 11,
+      "time": "2026-10-02T17:36:50.704178+00:00",
+      "kind": "tool_result",
+      "title": "submit_patch 完成",
+      "data": {
+        "ok": true,
+        "submitted": true
+      }
+    }
+  ],
+  "diff": "--- a/solution.py\n+++ b/solution.py\n@@ -7,7 +7,7 @@\n             valid.append((start, end))\n     merged = []\n     for start, end in sorted(valid):\n-        if merged and start <= merged[-1][1]:\n+        if merged and start < merged[-1][1]:\n             merged[-1] = (merged[-1][0], max(merged[-1][1], end))\n         else:\n             merged.append((start, end))\n",
+  "visible": {
+    "total": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_nested_windows (test_visible.VisibleTests.test_nested_windows) ... ok\ntest_overlapping_windows (test_visible.VisibleTests.test_overlapping_windows) ... ok\ntest_touching_windows_stay_separate (test_visible.VisibleTests.test_touching_windows_stay_separate) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 812,
+    "image": "python:3.12-slim"
+  },
+  "hidden": {
+    "total": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true,
+    "output": "test_empty_windows_ignored (test_hidden.HiddenTests.test_empty_windows_ignored) ... ok\ntest_negative_endpoints_and_overlap_bridge (test_hidden.HiddenTests.test_negative_endpoints_and_overlap_bridge) ... ok\ntest_reversed_interval (test_hidden.HiddenTests.test_reversed_interval) ... ok\ntest_sorting_duplicates_and_no_mutation (test_hidden.HiddenTests.test_sorting_duplicates_and_no_mutation) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n",
+    "elapsed_ms": 906,
+    "image": "python:3.12-slim"
+  },
+  "baseline": {
+    "total": 3,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": false,
+    "output": "test_nested_windows (test_visible.VisibleTests.test_nested_windows) ... ok\ntest_overlapping_windows (test_visible.VisibleTests.test_overlapping_windows) ... ok\ntest_touching_windows_stay_separate (test_visible.VisibleTests.test_touching_windows_stay_separate) ... FAIL\n\n======================================================================\nFAIL: test_touching_windows_stay_separate (test_visible.VisibleTests.test_touching_windows_stay_separate)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/checks/test_visible.py\", line 9, in test_touching_windows_stay_separate\n    self.assertEqual(merge_windows([(1, 3), (3, 5)]), [(1, 3), (3, 5)])\nAssertionError: Lists differ: [(1, 5)] != [(1, 3), (3, 5)]\n\nFirst differing element 0:\n(1, 5)\n(1, 3)\n\nSecond list contains 1 additional elements.\nFirst extra element 1:\n(3, 5)\n\n- [(1, 5)]\n+ [(1, 3), (3, 5)]\n\n----------------------------------------------------------------------\nRan 3 tests in 0.004s\n\nFAILED (failures=1)\n",
+    "elapsed_ms": 828,
+    "image": "python:3.12-slim"
+  },
+  "summary": "Change the merge condition from <= to < so only strictly overlapping half-open intervals merge; touching intervals (start == previous end) remain separate. Empty intervals are already skipped and reversed intervals already raise ValueError.",
+  "error": null,
+  "files_changed": 1,
+  "cancel_requested": false,
+  "model": "deepseek-flash",
+  "task_sha256": "596e88c7582a9fa49c10155a19c1882c8a2bb7a997b6d2b1a1cb7d8dbe0d0028",
+  "elapsed_ms": 3610,
+  "source_sha256": "adc747d90bfd8b24e5e8dd203b903d6c076d80da54a04fdfadad36ceca51c5b3"
+}

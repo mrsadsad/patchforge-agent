@@ -1,0 +1,23 @@
+{
+  "id": "timezone-day-buckets",
+  "title": "修复跨时区事件日期归桶",
+  "category": "Datetime handling",
+  "difficulty": "medium",
+  "split": "development",
+  "issue": "Synthetic development fixture, hand-authored for PatchForge; not an external benchmark.\n\nRepair daily_counts(events, offset_minutes=0). events is a list of valid ISO-8601 timestamp strings that include UTC Z or an explicit UTC offset. Bucket each instant by calendar date in the requested fixed UTC offset, given as integer minutes in [-1439,1439]. Return a dictionary mapping YYYY-MM-DD to its count, inserted in ascending date order. Raise ValueError for naive timestamps or an out-of-range offset. An empty event list returns {}. Convert the represented instant to the target offset; do not merely relabel its timezone. The current implementation places events crossing midnight in the wrong day.",
+  "files": {
+    "solution.py": "from datetime import datetime, timedelta, timezone\n\n\ndef daily_counts(events, offset_minutes=0):\n    if not -1439 <= offset_minutes <= 1439:\n        raise ValueError(\"offset must be less than 24 hours\")\n    target = timezone(timedelta(minutes=offset_minutes))\n    counts = {}\n    for event in events:\n        parsed = datetime.fromisoformat(event.replace(\"Z\", \"+00:00\"))\n        if parsed.tzinfo is None:\n            raise ValueError(\"timestamp must include timezone\")\n        local = parsed.replace(tzinfo=target)\n        day = local.date().isoformat()\n        counts[day] = counts.get(day, 0) + 1\n    return dict(sorted(counts.items()))\n",
+    "test_visible.py": "import unittest\nfrom solution import daily_counts\n\nclass VisibleTests(unittest.TestCase):\n    def test_eastward_midnight_crossing(self):\n        self.assertEqual(daily_counts([\"2026-01-31T20:30:00Z\"], 480), {\"2026-02-01\": 1})\n\n    def test_westward_year_crossing(self):\n        self.assertEqual(daily_counts([\"2026-01-01T01:00:00+00:00\"], -300), {\"2025-12-31\": 1})\n\n    def test_counts_same_utc_day(self):\n        self.assertEqual(daily_counts([\"2026-03-10T01:00:00Z\", \"2026-03-10T23:00:00Z\"]), {\"2026-03-10\": 2})\n"
+  },
+  "editable": [
+    "solution.py"
+  ],
+  "hidden_tests": "import unittest\nfrom solution import daily_counts\n\nclass HiddenTests(unittest.TestCase):\n    def test_source_offset_and_fractional_hour_target(self):\n        self.assertEqual(daily_counts([\"2026-03-02T01:00:00+09:00\"], 330), {\"2026-03-01\": 1})\n        self.assertEqual(daily_counts([\"2026-03-01T23:30:00-02:00\"]), {\"2026-03-02\": 1})\n\n    def test_exact_midnight_and_sorted_keys(self):\n        result = daily_counts([\"2026-04-02T23:00:00Z\", \"2026-04-01T23:00:00Z\", \"2026-04-01T22:59:59Z\"], 60)\n        self.assertEqual(result, {\"2026-04-01\": 1, \"2026-04-02\": 1, \"2026-04-03\": 1})\n        self.assertEqual(list(result), [\"2026-04-01\", \"2026-04-02\", \"2026-04-03\"])\n\n    def test_naive_and_invalid_offset(self):\n        with self.assertRaises(ValueError):\n            daily_counts([\"2026-01-01T12:00:00\"])\n        for offset in (-1440, 1440):\n            with self.subTest(offset=offset), self.assertRaises(ValueError):\n                daily_counts([], offset)\n\n    def test_empty_and_equivalent_instants(self):\n        self.assertEqual(daily_counts([], 480), {})\n        self.assertEqual(daily_counts([\"2026-01-01T00:00:00Z\", \"2025-12-31T19:00:00-05:00\"]), {\"2026-01-01\": 2})\n",
+  "demo_edits": [
+    {
+      "path": "solution.py",
+      "old": "local = parsed.replace(tzinfo=target)",
+      "new": "local = parsed.astimezone(target)"
+    }
+  ]
+}

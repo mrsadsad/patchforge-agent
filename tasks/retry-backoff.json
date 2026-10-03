@@ -1,0 +1,23 @@
+{
+  "id": "retry-backoff",
+  "title": "修复重试次数与退避序列",
+  "category": "Reliability",
+  "difficulty": "easy",
+  "split": "development",
+  "issue": "Synthetic development fixture, hand-authored for PatchForge; not an external benchmark.\n\nRepair retry_delays(attempts, base=0.5, cap=8.0). attempts is the TOTAL number of allowed calls, including the first call. Return one delay per retry, so attempts=1 gives []. Delay number i, starting at i=0, is min(cap, base * 2**i); there is no jitter. The first retry uses base, unless cap is lower. Raise ValueError for attempts < 1, negative base, or negative cap. Inputs are integer attempts and finite numeric base/cap. The current implementation adds an extra retry and starts its exponential sequence too high.",
+  "files": {
+    "solution.py": "def retry_delays(attempts, base=0.5, cap=8.0):\n    if attempts < 1 or base < 0 or cap < 0:\n        raise ValueError(\"invalid retry policy\")\n    return [min(cap, base * 2 ** (retry + 1)) for retry in range(attempts)]\n",
+    "test_visible.py": "import unittest\nfrom solution import retry_delays\n\nclass VisibleTests(unittest.TestCase):\n    def test_no_retries(self):\n        self.assertEqual(retry_delays(1), [])\n\n    def test_exponential_sequence(self):\n        self.assertEqual(retry_delays(5), [0.5, 1.0, 2.0, 4.0])\n\n    def test_caps_each_delay(self):\n        self.assertEqual(retry_delays(6, base=2, cap=5), [2, 4, 5, 5, 5])\n"
+  },
+  "editable": [
+    "solution.py"
+  ],
+  "hidden_tests": "import unittest\nfrom solution import retry_delays\n\nclass HiddenTests(unittest.TestCase):\n    def test_cap_below_base(self):\n        self.assertEqual(retry_delays(4, base=9, cap=3), [3, 3, 3])\n\n    def test_zero_delays(self):\n        self.assertEqual(retry_delays(4, base=0), [0, 0, 0])\n        self.assertEqual(retry_delays(3, cap=0), [0, 0])\n\n    def test_fractional_base(self):\n        self.assertEqual(retry_delays(4, base=0.125, cap=0.3), [0.125, 0.25, 0.3])\n\n    def test_invalid_policy(self):\n        for kwargs in ({\"attempts\": 0}, {\"attempts\": -1}, {\"attempts\": 2, \"base\": -1}, {\"attempts\": 2, \"cap\": -1}):\n            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):\n                retry_delays(**kwargs)\n",
+  "demo_edits": [
+    {
+      "path": "solution.py",
+      "old": "return [min(cap, base * 2 ** (retry + 1)) for retry in range(attempts)]",
+      "new": "return [min(cap, base * 2 ** retry) for retry in range(attempts - 1)]"
+    }
+  ]
+}
