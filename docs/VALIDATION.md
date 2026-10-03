@@ -8,7 +8,7 @@
 - **20 次真实模型固定版本对照完成**，5 个独立任务、每项两策略两重复，实际 46 次请求；记录在 `eval/v02-repeated/`。开发探测失败另存，首版 `eval/first-live/` 保留。
 - `python scripts/smoke_ui.py --url http://127.0.0.1:8771 --require-v02`：Edge headless **14 项检查通过**，包含历史记录、源码与版本切换、补丁与测试、版本摘要、ZIP 清单、分来源评测、演示、轨迹、上下文与来源标记。无 JavaScript 异常。
 - 390px 无水平溢出。截图：`workbench-live.png`、`workbench-code.png`、`workbench-mobile.png`。
-- 已添加 Windows/Linux、Python 3.11/3.12 的 GitHub Actions 配置和独立 Docker 回放任务；远端 CI 尚未触发，实际本轮执行环境为上述 Windows 主机。
+- 公开仓库首次 [GitHub Actions 验证](https://github.com/mrsadsad/patchforge-agent/actions/runs/37110011242)已全部通过：Windows/Linux × Python 3.11/3.12 四组软件测试，以及独立 Docker 开源缺陷回放，共五项任务。对应代码提交 `50fc578`；之后的本记录更新仅涉及文档。
 - 原有 OpsLens 文件未修改；本次在独立运行目录与 8771 启动完整新版服务。
 
 未验证：生产负载、多租户攻击、任意第三方依赖项目、对抗式测试作弊、其他模型供应商。已有测试通过不等于这些能力已实现。
